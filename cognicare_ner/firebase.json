@@ -1,0 +1,1 @@
+{"flutter":{"platforms":{"android":{"default":{"projectId":"cognicare-ner","appId":"1:185179890828:android:d432072001a038003ec7a9","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"cognicare-ner","configurations":{"android":"1:185179890828:android:d432072001a038003ec7a9","web":"1:185179890828:web:5505d863adc3ca383ec7a9"}}}}}}
