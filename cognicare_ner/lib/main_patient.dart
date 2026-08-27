@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 import 'app.dart';
+import 'core/services/local_db.dart';
 import 'firebase_options.dart';
 
 /// Patient entrypoint.
@@ -18,6 +19,7 @@ Future<void> main() async {
     persistenceEnabled: true,
     cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
+  await LocalDb.init();
 
   const String role = String.fromEnvironment('ROLE', defaultValue: 'patient');
   runApp(const CogniCareApp(role: role));
