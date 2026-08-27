@@ -6,7 +6,9 @@ import '../../core/services/local_db.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/big_button.dart';
 import '../../core/widgets/big_card.dart';
+import 'games/pattern_game.dart';
 
 /// Patient landing screen. No scrolling, one calm greeting, big and simple.
 ///
@@ -16,6 +18,14 @@ class PatientHome extends StatelessWidget {
   const PatientHome({super.key, required this.patientId});
 
   final String patientId;
+
+  void _play(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PatternGame(patientId: patientId),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,17 +68,21 @@ class PatientHome extends StatelessWidget {
                     style: AppText.gameQuestion(),
                   ),
                   const SizedBox(height: 24),
-                  BigCard(
-                    child: Text(
-                      profile == null
-                          ? 'This device is linked (code $patientId). Your '
-                              'activities will appear here once everything is '
-                              'set up.'
-                          : 'Your activities and reminders will appear here.',
-                      textAlign: TextAlign.center,
-                      style: AppText.body(color: AppColors.textMuted),
+                  if (profile == null)
+                    BigCard(
+                      child: Text(
+                        'This device is linked (code $patientId). Your '
+                        'activities will appear here once everything is set up.',
+                        textAlign: TextAlign.center,
+                        style: AppText.body(color: AppColors.textMuted),
+                      ),
+                    )
+                  else
+                    BigButton(
+                      label: 'What comes next?',
+                      icon: Icons.extension_rounded,
+                      onTap: () => _play(context),
                     ),
-                  ),
                 ],
               );
             },
