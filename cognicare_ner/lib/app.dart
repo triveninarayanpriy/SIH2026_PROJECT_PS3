@@ -49,11 +49,17 @@ class CogniCareApp extends StatelessWidget {
           ? (context, child) => Stack(
                 textDirection: TextDirection.ltr,
                 children: [
-                  if (child != null) Positioned.fill(child: child),
+                  // Non-positioned child so the Stack takes the app's size.
+                  child ?? const SizedBox.shrink(),
+                  // ExcludeFocus keeps this out-of-Navigator button out of the
+                  // view's focus traversal, which otherwise asserts on Flutter
+                  // web when the browser focuses the view before first layout.
                   const Positioned(
                     left: 12,
                     bottom: 12,
-                    child: SafeArea(child: _SwitchRoleButton()),
+                    child: SafeArea(
+                      child: ExcludeFocus(child: _SwitchRoleButton()),
+                    ),
                   ),
                 ],
               )
