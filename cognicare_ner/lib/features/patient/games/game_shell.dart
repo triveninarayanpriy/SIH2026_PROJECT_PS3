@@ -72,9 +72,9 @@ class _GameShellState extends State<GameShell> {
     TtsService.instance.speak(_round.prompt);
   }
 
-  Future<void> _answer(GameItem choice) async {
+  Future<void> _answer(String choiceId) async {
     if (_locked) return;
-    final bool isCorrect = choice.id == _round.answerId;
+    final bool isCorrect = choiceId == _round.answerId;
 
     // Score only the first attempt of each round.
     if (!_roundScored) {
@@ -148,11 +148,10 @@ class _GameShellState extends State<GameShell> {
               Expanded(
                 child: Center(
                   child: SingleChildScrollView(
-                    // Sequence can grow to 7 items; wrap + a bounded scroll keeps
-                    // it on one screen without ever forcing the patient to scroll
-                    // to reach the answers below.
+                    // Bounded, non-scrolling: keeps a tall stimulus on one screen
+                    // without ever forcing the patient to scroll to the answers.
                     physics: const NeverScrollableScrollPhysics(),
-                    child: _sequence(),
+                    child: _round.stimulus,
                   ),
                 ),
               ),
@@ -165,30 +164,18 @@ class _GameShellState extends State<GameShell> {
     );
   }
 
-  Widget _sequence() {
-    return Wrap(
-      alignment: WrapAlignment.center,
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        for (final GameItem it in _round.sequence)
-          GameTile(item: it, size: 84),
-        const GameTile(item: null, size: 84, highlight: true),
-      ],
-    );
-  }
-
   Widget _answers() {
     return Wrap(
       alignment: WrapAlignment.center,
       spacing: 16,
       runSpacing: 16,
       children: [
-        for (final GameItem choice in _round.choices)
+        for (final GameChoice choice in _round.choices)
           GameTile(
-            item: choice,
-            size: 140,
-            onTap: () => _answer(choice),
+            width: choice.width,
+            height: choice.height,
+            onTap: () => _answer(choice.id),
+            child: choice.content,
           ),
       ],
     );

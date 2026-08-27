@@ -8,7 +8,9 @@ import '../../core/theme/app_text.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/big_button.dart';
 import '../../core/widgets/big_card.dart';
+import 'games/family_game.dart';
 import 'games/pattern_game.dart';
+import 'games/voice_game.dart';
 
 /// Patient landing screen. No scrolling, one calm greeting, big and simple.
 ///
@@ -19,12 +21,8 @@ class PatientHome extends StatelessWidget {
 
   final String patientId;
 
-  void _play(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => PatternGame(patientId: patientId),
-      ),
-    );
+  void _open(BuildContext context, Widget game) {
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => game));
   }
 
   @override
@@ -77,12 +75,36 @@ class PatientHome extends StatelessWidget {
                         style: AppText.body(color: AppColors.textMuted),
                       ),
                     )
-                  else
+                  else ...[
                     BigButton(
                       label: 'What comes next?',
                       icon: Icons.extension_rounded,
-                      onTap: () => _play(context),
+                      onTap: () => _open(
+                        context,
+                        PatternGame(patientId: patientId),
+                      ),
                     ),
+                    const SizedBox(height: 16),
+                    BigButton(
+                      label: 'Who is this?',
+                      icon: Icons.face_rounded,
+                      color: AppColors.secondary,
+                      onTap: () => _open(
+                        context,
+                        FamilyGame(patientId: patientId),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    BigButton(
+                      label: 'Whose voice is this?',
+                      icon: Icons.hearing_rounded,
+                      color: AppColors.success,
+                      onTap: () => _open(
+                        context,
+                        VoiceGame(patientId: patientId),
+                      ),
+                    ),
+                  ],
                 ],
               );
             },

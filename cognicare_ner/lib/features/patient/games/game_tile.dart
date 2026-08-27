@@ -5,46 +5,31 @@ import '../../../core/theme/app_text.dart';
 import '../../../core/theme/app_theme.dart';
 import 'game_models.dart';
 
-/// A large item tile (big icon + label). Display-only when [onTap] is null;
-/// a huge single-tap answer target when [onTap] is set. Pass [item] = null to
-/// draw the "?" slot at the end of a sequence.
+/// A decorated, optionally single-tap box holding arbitrary [child] content.
+///
+/// Big by default (min 96x88 target). Pass [width]/[height] for fixed square
+/// tiles (e.g. the pattern sequence); leave them null to size to the content
+/// (e.g. a name pill).
 class GameTile extends StatelessWidget {
   const GameTile({
     super.key,
-    this.item,
+    required this.child,
     this.onTap,
-    this.size = 132,
+    this.width,
+    this.height,
     this.highlight = false,
+    this.padding = const EdgeInsets.all(16),
   });
 
-  final GameItem? item;
+  final Widget child;
   final VoidCallback? onTap;
-  final double size;
+  final double? width;
+  final double? height;
   final bool highlight;
+  final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) {
-    final GameItem? it = item;
-    final double iconSize = size * 0.44;
-    final Widget content = Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          it?.icon ?? Icons.help_outline_rounded,
-          size: iconSize,
-          color: it == null ? AppColors.primary : AppColors.text,
-        ),
-        if (it != null) ...[
-          const SizedBox(height: 8),
-          Text(
-            it.label,
-            textAlign: TextAlign.center,
-            style: AppText.body().copyWith(fontSize: 18),
-          ),
-        ],
-      ],
-    );
-
     final BoxDecoration decoration = BoxDecoration(
       color: highlight ? AppColors.primarySoft : AppColors.surface,
       borderRadius: BorderRadius.circular(AppTheme.cardRadius),
@@ -54,32 +39,54 @@ class GameTile extends StatelessWidget {
       ),
     );
 
-    if (onTap == null) {
-      return Container(
-        width: size,
-        height: size,
+    final Widget box = ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 96, minHeight: 88),
+      child: Container(
+        width: width,
+        height: height,
+        padding: padding,
+        alignment: Alignment.center,
         decoration: decoration,
-        child: content,
-      );
-    }
+        child: child,
+      ),
+    );
 
+    if (onTap == null) return box;
     return Semantics(
       button: true,
-      label: it?.label ?? 'answer',
       child: Material(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-          child: Container(
-            width: size,
-            height: size,
-            decoration: decoration,
-            child: content,
-          ),
+          child: box,
         ),
       ),
+    );
+  }
+}
+
+/// Inner content for a [GameItem] (big icon + label).
+class GameItemContent extends StatelessWidget {
+  const GameItemContent({super.key, required this.item, this.iconSize = 56});
+
+  final GameItem item;
+  final double iconSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(item.icon, size: iconSize, color: AppColors.text),
+        const SizedBox(height: 8),
+        Text(
+          item.label,
+          textAlign: TextAlign.center,
+          style: AppText.body().copyWith(fontSize: 18),
+        ),
+      ],
     );
   }
 }

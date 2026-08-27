@@ -2,8 +2,10 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_colors.dart';
 import 'game_models.dart';
 import 'game_shell.dart';
+import 'game_tile.dart';
 
 /// Everyday items used by the pattern game — clear icons + plain labels.
 const List<GameItem> kPatternItems = <GameItem>[
@@ -43,7 +45,6 @@ List<GameRound> buildPatternRounds({
     ];
     final GameItem correct = pattern[seqLen % period];
 
-    // Distractors: the pattern's other items first (plausible), then the pool.
     final List<GameItem> candidates = <GameItem>[
       ...pattern.where((it) => it.id != correct.id),
       ...pool.skip(period).where((it) => it.id != correct.id),
@@ -55,14 +56,44 @@ List<GameRound> buildPatternRounds({
       if (distractors.every((d) => d.id != c.id)) distractors.add(c);
     }
 
-    final List<GameItem> choices = <GameItem>[correct, ...distractors]
+    final List<GameItem> answerItems = <GameItem>[correct, ...distractors]
       ..shuffle(rng);
+
+    final Widget stimulus = Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 12,
+      runSpacing: 12,
+      children: [
+        for (final GameItem it in sequence)
+          GameTile(
+            width: 84,
+            height: 84,
+            padding: const EdgeInsets.all(8),
+            child: GameItemContent(item: it, iconSize: 34),
+          ),
+        const GameTile(
+          width: 84,
+          height: 84,
+          highlight: true,
+          child: Icon(Icons.help_outline_rounded,
+              size: 40, color: AppColors.primary),
+        ),
+      ],
+    );
 
     out.add(GameRound(
       prompt: 'What comes next?',
-      sequence: sequence,
-      choices: choices,
+      stimulus: stimulus,
       answerId: correct.id,
+      choices: [
+        for (final GameItem it in answerItems)
+          GameChoice(
+            id: it.id,
+            width: 140,
+            height: 140,
+            content: GameItemContent(item: it),
+          ),
+      ],
     ));
   }
   return out;
@@ -70,11 +101,7 @@ List<GameRound> buildPatternRounds({
 
 /// Launches the pattern game: builds the rounds once, then runs [GameShell].
 class PatternGame extends StatefulWidget {
-  const PatternGame({
-    super.key,
-    required this.patientId,
-    this.difficulty = 2,
-  });
+  const PatternGame({super.key, required this.patientId, this.difficulty = 2});
 
   final String patientId;
   final int difficulty;
