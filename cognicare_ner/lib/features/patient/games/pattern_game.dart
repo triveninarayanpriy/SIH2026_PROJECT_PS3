@@ -90,6 +90,7 @@ List<GameRound> buildPatternRounds({
         for (final GameItem it in answerItems)
           GameChoice(
             id: it.id,
+            label: it.label,
             width: 140,
             height: 140,
             content: GameItemContent(item: it),

@@ -90,6 +90,7 @@ class _FamilyGameState extends State<FamilyGame> {
           for (final FamilyMember m in picks)
             GameChoice(
               id: m.name,
+              label: m.name,
               content: Text(
                 m.name,
                 textAlign: TextAlign.center,

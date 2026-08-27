@@ -5,6 +5,7 @@ import '../../../core/ai/anomaly_detector.dart';
 import '../../../core/models/game_result.dart';
 import '../../../core/models/media_item.dart';
 import '../../../core/services/local_db.dart';
+import '../../../core/services/stt_service.dart';
 import '../../../core/services/sync_service.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/theme/app_colors.dart';
@@ -56,6 +57,7 @@ class _GameShellState extends State<GameShell> {
   bool _roundScored = false; // first attempt on this round has been counted
   bool _locked = false; // ignore taps while a correct answer advances
   bool _finished = false;
+  bool _listening = false; // optional voice-answer state
   late final DateTime _start;
 
   int get _total => widget.rounds.length;
@@ -69,8 +71,8 @@ class _GameShellState extends State<GameShell> {
   }
 
   void _speakPrompt() {
-    // Caregiver clip when available, otherwise the TTS stub. Never blocks.
-    TtsService.instance.speak(_round.prompt);
+    // Caregiver clip when available, otherwise device TTS. Never blocks.
+    TtsService.instance.play(_round.prompt, audioPath: _round.promptAudioPath);
   }
 
   Future<void> _answer(String choiceId) async {
@@ -86,13 +88,13 @@ class _GameShellState extends State<GameShell> {
     if (isCorrect) {
       _locked = true;
       GentleFeedback.correct(context);
-      TtsService.instance.speak('Very good');
+      TtsService.instance.play('Very good');
       await Future<void>.delayed(const Duration(milliseconds: 1200));
       if (!mounted) return;
       _advance();
     } else {
       GentleFeedback.tryAgain(context);
-      TtsService.instance.speak("Let's try again");
+      TtsService.instance.play("Let's try again");
     }
   }
 
@@ -161,10 +163,68 @@ class _GameShellState extends State<GameShell> {
               ),
               const SizedBox(height: 12),
               _answers(),
+              const SizedBox(height: 12),
+              _micButton(),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  /// Optional voice answer. Tapping is always available; this only adds a spoken
+  /// shortcut. Matches the recognized word to a choice's [GameChoice.label].
+  Widget _micButton() {
+    return BigButton(
+      label: _listening ? 'Listening…' : 'Answer by voice',
+      icon: _listening ? Icons.mic_rounded : Icons.mic_none_rounded,
+      color: _listening ? AppColors.primary : AppColors.secondarySoft,
+      onTap: _listen,
+    );
+  }
+
+  Future<void> _listen() async {
+    if (_locked || _listening) return;
+    final bool ok = await SttService.instance.ensureInit();
+    if (!mounted) return;
+    if (!ok) {
+      _hint('Voice answers are not available here — please tap.');
+      return;
+    }
+    setState(() => _listening = true);
+    // Safety reset if nothing is recognized.
+    Future<void>.delayed(const Duration(seconds: 8), () {
+      if (mounted && _listening) setState(() => _listening = false);
+    });
+    await SttService.instance.listen(
+      onResult: (String text) {
+        if (!mounted) return;
+        setState(() => _listening = false);
+        _matchSpoken(text);
+      },
+    );
+  }
+
+  void _matchSpoken(String spoken) {
+    final String s = spoken.trim().toLowerCase();
+    if (s.isEmpty) {
+      _hint("I didn't catch that — you can tap the pictures.");
+      return;
+    }
+    for (final GameChoice c in _round.choices) {
+      final String? label = c.label?.trim().toLowerCase();
+      if (label == null || label.isEmpty) continue;
+      if (s == label || s.contains(label) || label.contains(s)) {
+        _answer(c.id);
+        return;
+      }
+    }
+    _hint("I didn't catch that — you can tap the pictures.");
+  }
+
+  void _hint(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), duration: const Duration(seconds: 3)),
     );
   }
 

@@ -19,12 +19,17 @@ class GameChoice {
   const GameChoice({
     required this.id,
     required this.content,
+    this.label,
     this.width,
     this.height,
   });
 
   final String id;
   final Widget content;
+
+  /// Spoken word for optional voice matching (e.g. 'Cup', a family name).
+  final String? label;
+
   final double? width;
   final double? height;
 }

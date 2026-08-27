@@ -87,6 +87,7 @@ class _VoiceGameState extends State<VoiceGame> {
           for (final FamilyMember m in picks)
             GameChoice(
               id: m.name,
+              label: m.name,
               width: 150,
               content: Column(
                 mainAxisSize: MainAxisSize.min,

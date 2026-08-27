@@ -22,9 +22,9 @@ class SpeakLabel extends StatelessWidget {
   final TextStyle? textStyle;
 
   Future<void> _speak() async {
-    // TODO(audio): when audioPath is set, play the recorded caregiver clip
-    // (just_audio). Until the audio layer lands, route through the TTS stub.
-    await TtsService.instance.speak(text);
+    // Primary: the caregiver-recorded clip at audioPath (or a clip mapped to
+    // this text); fallback: device TTS.
+    await TtsService.instance.play(text, audioPath: audioPath);
   }
 
   @override
