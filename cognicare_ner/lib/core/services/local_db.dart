@@ -129,28 +129,36 @@ class LocalDb {
   // ---- Sync queue -------------------------------------------------------
   /// Queues an entity change for the sync service to push to Firestore later.
   ///
-  /// Keyed by `entityType:id` so the queue always holds the latest pending
-  /// state for a given entity (re-queuing overwrites rather than piling up).
+  /// Keyed by [docPath] (the target Firestore document path) so the queue
+  /// always holds the latest pending state for a given document — re-queuing
+  /// the same doc overwrites rather than piling up. [op] is `'set'` or
+  /// `'update'`.
   static Future<void> addToSyncQueue(
     String entityType,
-    String id,
-    Map<String, dynamic> json,
-  ) {
+    String docPath,
+    Map<String, dynamic> json, {
+    String op = 'set',
+  }) {
     final entry = <String, dynamic>{
       'entityType': entityType,
-      'id': id,
+      'docPath': docPath,
       'json': json,
+      'op': op,
       'queuedAt': DateTime.now().toIso8601String(),
     };
-    return _syncQueue.put('$entityType:$id', entry);
+    return _syncQueue.put(docPath, entry);
   }
 
-  /// All pending sync entries (each a map with entityType / id / json / queuedAt).
+  /// All pending sync entries (each a map with
+  /// entityType / docPath / json / op / queuedAt).
   static List<Map<dynamic, dynamic>> syncQueueEntries() =>
       _syncQueue.values.whereType<Map<dynamic, dynamic>>().toList();
 
-  static Future<void> removeFromSyncQueue(String entityType, String id) =>
-      _syncQueue.delete('$entityType:$id');
+  /// Number of pending sync entries (handy for the offline-queue demo/UI).
+  static int syncQueueLength() => _syncQueue.length;
+
+  static Future<void> removeFromSyncQueue(String docPath) =>
+      _syncQueue.delete(docPath);
 
   static Future<void> clearSyncQueue() => _syncQueue.clear();
 }

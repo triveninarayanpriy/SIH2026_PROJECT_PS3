@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 
+import '../models/game_result.dart';
+import '../services/local_db.dart';
+import '../services/sync_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text.dart';
 import '../theme/app_theme.dart';
@@ -21,7 +25,42 @@ class ThemePreviewScreen extends StatefulWidget {
 }
 
 class _ThemePreviewScreenState extends State<ThemePreviewScreen> {
+  static const String _demoPatientId = 'demo-patient';
+
   int _step = 2;
+  int _queueLen = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _queueLen = LocalDb.syncQueueLength();
+  }
+
+  /// Writes a dummy GameResult locally + enqueues it for cloud sync, then
+  /// refreshes the visible queue length. Offline, the queue grows; online, the
+  /// sync engine drains it back to 0.
+  Future<void> _queueDummyResult() async {
+    final GameResult result = GameResult(
+      id: const Uuid().v4(),
+      patientId: _demoPatientId,
+      game: 'pattern',
+      domain: 'attention',
+      correct: 3,
+      total: 5,
+      durationMs: 4200,
+      difficulty: 2,
+      at: DateTime.now(),
+    );
+    await SyncService.instance.saveGameResult(result);
+    if (!mounted) return;
+    setState(() => _queueLen = LocalDb.syncQueueLength());
+  }
+
+  Future<void> _syncNow() async {
+    await SyncService.instance.syncNow();
+    if (!mounted) return;
+    setState(() => _queueLen = LocalDb.syncQueueLength());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -114,9 +153,78 @@ class _ThemePreviewScreenState extends State<ThemePreviewScreen> {
               color: AppColors.gentleWarning,
               onTap: () => GentleFeedback.tryAgain(context),
             ),
+            _gap(),
+            _section('Offline sync — Airplane test'),
+            BigCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  StreamBuilder<String>(
+                    stream: SyncService.instance.status,
+                    initialData: SyncService.instance.currentStatus,
+                    builder: (context, snap) =>
+                        _syncChip(snap.data ?? SyncService.statusOffline),
+                  ),
+                  const SizedBox(height: 16),
+                  Text('Queue length: $_queueLen', style: AppText.title()),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Turn ON Airplane mode, tap "Queue a game result" a few '
+                    'times (watch the number grow), then turn Airplane mode OFF '
+                    'and watch it drain back to 0 as it syncs to Firestore.',
+                    style: AppText.body(color: AppColors.textMuted),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            BigButton(
+              label: 'Queue a game result',
+              icon: Icons.add_task_rounded,
+              color: AppColors.secondary,
+              onTap: _queueDummyResult,
+            ),
+            const SizedBox(height: 16),
+            BigButton(
+              label: 'Sync now',
+              icon: Icons.sync_rounded,
+              onTap: _syncNow,
+            ),
             const SizedBox(height: 32),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _syncChip(String status) {
+    final (Color color, IconData icon, String label) = switch (status) {
+      SyncService.statusSynced => (
+          AppColors.success,
+          Icons.cloud_done_rounded,
+          'Synced',
+        ),
+      SyncService.statusSyncing => (
+          AppColors.primary,
+          Icons.sync_rounded,
+          'Syncing…',
+        ),
+      _ => (AppColors.gentleWarning, Icons.cloud_off_rounded, 'Offline'),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 28),
+          const SizedBox(width: 8),
+          Text(label, style: AppText.body(color: color)),
+        ],
       ),
     );
   }

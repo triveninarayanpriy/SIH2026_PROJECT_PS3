@@ -62,6 +62,19 @@ class FirestoreService {
   CollectionReference<Map<String, dynamic>> alerts(String patientId) =>
       patientDoc(patientId).collection('alerts');
 
+  /// `patients/{patientId}/media` — one document per MediaItem.
+  ///
+  /// Media (and reminders) are modelled as per-item subcollections rather than
+  /// array fields so the offline sync engine can push each item as its own
+  /// document (its own [DocumentReference] / docPath), avoiding array
+  /// read-modify-write conflicts when several edits are queued offline.
+  CollectionReference<Map<String, dynamic>> media(String patientId) =>
+      patientDoc(patientId).collection('media');
+
+  /// `patients/{patientId}/reminders` — one document per Reminder.
+  CollectionReference<Map<String, dynamic>> reminders(String patientId) =>
+      patientDoc(patientId).collection('reminders');
+
   // ---------------------------------------------------------------------------
   // Patient profile / media / reminders  (fields on the patient doc)
   // ---------------------------------------------------------------------------
@@ -164,4 +177,61 @@ class FirestoreService {
     // TODO: read patientIds[] from caregivers/{uid} or doctors/{uid}.
     throw UnimplementedError('TODO: implement patientIdsForRole');
   }
+
+  // ---------------------------------------------------------------------------
+  // Generic document access used by the offline sync engine
+  // ---------------------------------------------------------------------------
+
+  /// Writes [data] to the document at [path], merging with any existing doc so
+  /// an offline-created document is created on first sync and merged after.
+  Future<void> setDoc(String path, Map<String, dynamic> data) =>
+      _db.doc(path).set(data, SetOptions(merge: true));
+
+  /// Applies a partial update to the document at [path]. Falls back to a
+  /// merge-set when the document does not exist yet (e.g. it was created
+  /// offline and its parent has not synced), so a queued update never wedges.
+  Future<void> updateDoc(String path, Map<String, dynamic> data) async {
+    final DocumentReference<Map<String, dynamic>> ref = _db.doc(path);
+    try {
+      await ref.update(data);
+    } on FirebaseException catch (e) {
+      if (e.code == 'not-found') {
+        await ref.set(data, SetOptions(merge: true));
+      } else {
+        rethrow;
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Typed reads for the initial cloud -> local pull
+  // ---------------------------------------------------------------------------
+
+  /// The patient document (holds the profile fields), or null if absent.
+  Future<Map<String, dynamic>?> fetchPatientDoc(String patientId) async {
+    final snap = await patientDoc(patientId).get();
+    return snap.data();
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchAll(
+    CollectionReference<Map<String, dynamic>> ref,
+  ) async {
+    final snap = await ref.get();
+    return snap.docs.map((d) => d.data()).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> fetchMedia(String patientId) =>
+      _fetchAll(media(patientId));
+
+  Future<List<Map<String, dynamic>>> fetchReminders(String patientId) =>
+      _fetchAll(reminders(patientId));
+
+  Future<List<Map<String, dynamic>>> fetchSessions(String patientId) =>
+      _fetchAll(sessions(patientId));
+
+  Future<List<Map<String, dynamic>>> fetchDailyCare(String patientId) =>
+      _fetchAll(dailyCare(patientId));
+
+  Future<List<Map<String, dynamic>>> fetchAlerts(String patientId) =>
+      _fetchAll(alerts(patientId));
 }
