@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'app.dart';
 import 'core/services/local_db.dart';
+import 'core/services/sync_service.dart';
 import 'firebase_options.dart';
 
 /// Unified demo entrypoint.
@@ -22,6 +23,11 @@ void main() async {
     cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
   await LocalDb.init();
+  // Fire-and-forget: background offline-first sync, never blocks startup.
+  // Target whichever patient this device already knows about.
+  SyncService.instance.init(
+    patientId: LocalDb.linkedPatientId() ?? LocalDb.caregiverPatientId(),
+  );
 
   runApp(const CogniCareApp(role: '', roleSwitching: true));
 }

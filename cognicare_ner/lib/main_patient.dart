@@ -22,7 +22,8 @@ Future<void> main() async {
   );
   await LocalDb.init();
   // Fire-and-forget: background offline-first sync, never blocks startup.
-  SyncService.instance.init();
+  // Pass the linked patient so a returning device re-pulls fresh cloud data.
+  SyncService.instance.init(patientId: LocalDb.linkedPatientId());
 
   const String role = String.fromEnvironment('ROLE', defaultValue: 'patient');
   runApp(const CogniCareApp(role: role));
