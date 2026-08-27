@@ -165,17 +165,24 @@ class FirestoreService {
     required String patientId,
     required bool isDoctor,
   }) {
-    // TODO: arrayUnion patientId into caregivers/{uid} or doctors/{uid}.
-    throw UnimplementedError('TODO: implement linkPatientToRole');
+    final DocumentReference<Map<String, dynamic>> ref =
+        (isDoctor ? doctors : caregivers).doc(uid);
+    return ref.set(
+      {
+        'patientIds': FieldValue.arrayUnion(<String>[patientId]),
+      },
+      SetOptions(merge: true),
+    );
   }
 
   /// Lists the patient ids a caregiver / doctor can access.
   Future<List<String>> patientIdsForRole({
     required String uid,
     required bool isDoctor,
-  }) {
-    // TODO: read patientIds[] from caregivers/{uid} or doctors/{uid}.
-    throw UnimplementedError('TODO: implement patientIdsForRole');
+  }) async {
+    final snap = await (isDoctor ? doctors : caregivers).doc(uid).get();
+    final Object? ids = snap.data()?['patientIds'];
+    return ids is List ? ids.map((e) => e.toString()).toList() : <String>[];
   }
 
   // ---------------------------------------------------------------------------

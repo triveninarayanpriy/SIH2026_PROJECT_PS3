@@ -26,6 +26,11 @@ class LocalDb {
   static const String dailyCareBoxName = 'dailyCare';
   static const String alertsBoxName = 'alerts';
   static const String syncQueueBoxName = 'syncQueue';
+  static const String appStateBoxName = 'appState';
+
+  // Keys used in the appState box.
+  static const String kLinkedPatientId = 'linkedPatientId';
+  static const String kCaregiverPatientId = 'caregiverPatientId';
 
   static late Box<PatientProfile> _profile;
   static late Box<MediaItem> _media;
@@ -34,6 +39,7 @@ class LocalDb {
   static late Box<DailyCare> _dailyCare;
   static late Box<Alert> _alerts;
   static late Box<dynamic> _syncQueue;
+  static late Box<dynamic> _appState;
 
   static bool _initialized = false;
 
@@ -52,6 +58,7 @@ class LocalDb {
     _dailyCare = await Hive.openBox<DailyCare>(dailyCareBoxName);
     _alerts = await Hive.openBox<Alert>(alertsBoxName);
     _syncQueue = await Hive.openBox<dynamic>(syncQueueBoxName);
+    _appState = await Hive.openBox<dynamic>(appStateBoxName);
     _initialized = true;
   }
 
@@ -161,4 +168,30 @@ class LocalDb {
       _syncQueue.delete(docPath);
 
   static Future<void> clearSyncQueue() => _syncQueue.clear();
+
+  // ---- App state (small key-value settings) -----------------------------
+  /// The appState box, for reactive widgets: `appStateBox.listenable(keys: …)`.
+  static Box<dynamic> get appStateBox => _appState;
+
+  static Future<void> putSetting(String key, Object? value) =>
+      _appState.put(key, value);
+
+  static Object? getSetting(String key) => _appState.get(key);
+
+  /// The patient id this device is paired to (patient role), or null.
+  static String? linkedPatientId() =>
+      _appState.get(kLinkedPatientId) as String?;
+
+  static Future<void> setLinkedPatientId(String id) =>
+      _appState.put(kLinkedPatientId, id);
+
+  static Future<void> clearLinkedPatientId() =>
+      _appState.delete(kLinkedPatientId);
+
+  /// The patient id a caregiver on this device manages, or null.
+  static String? caregiverPatientId() =>
+      _appState.get(kCaregiverPatientId) as String?;
+
+  static Future<void> setCaregiverPatientId(String id) =>
+      _appState.put(kCaregiverPatientId, id);
 }
