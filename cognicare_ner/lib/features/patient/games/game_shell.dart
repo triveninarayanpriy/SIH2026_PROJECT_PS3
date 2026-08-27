@@ -17,6 +17,7 @@ import '../../../core/widgets/big_button.dart';
 import '../../../core/widgets/big_progress_dots.dart';
 import '../../../core/widgets/gentle_feedback.dart';
 import '../../../core/widgets/speak_label.dart';
+import '../../../l10n/app_localizations.dart';
 import '../calm_mode.dart';
 import 'game_models.dart';
 import 'game_tile.dart';
@@ -62,6 +63,7 @@ class _GameShellState extends State<GameShell> {
   int _index = 0;
   int _correct = 0;
   int _wrongStreak = 0;
+  int _spokenIndex = -1; // last round index auto-spoken
   bool _roundScored = false; // first attempt on this round has been counted
   bool _locked = false; // ignore taps while a correct answer advances
   bool _finished = false;
@@ -78,7 +80,6 @@ class _GameShellState extends State<GameShell> {
     super.initState();
     _start = DateTime.now();
     _resetIdle();
-    _speakPrompt();
   }
 
   @override
@@ -104,14 +105,35 @@ class _GameShellState extends State<GameShell> {
     );
   }
 
-  void _speakPrompt() {
-    // Caregiver clip when available, otherwise device TTS. Never blocks.
-    TtsService.instance.play(_round.prompt, audioPath: _round.promptAudioPath);
+  /// The game prompt in the active language.
+  String _localizedPrompt(BuildContext context) {
+    final AppLocalizations t = AppLocalizations.of(context);
+    switch (widget.game) {
+      case 'pattern':
+        return t.whatComesNext;
+      case 'faces':
+        return t.whoIsThis;
+      case 'voice':
+        return t.whoseVoiceIsThis;
+      default:
+        return _round.prompt;
+    }
+  }
+
+  /// Speaks the prompt once per round (caregiver clip if mapped, else TTS).
+  void _autoSpeak(String prompt) {
+    if (_spokenIndex == _index || _finished) return;
+    _spokenIndex = _index;
+    final String? audioPath = _round.promptAudioPath;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      TtsService.instance.play(prompt, audioPath: audioPath);
+    });
   }
 
   Future<void> _answer(String choiceId) async {
     if (_locked || _leaving) return;
     _resetIdle();
+    final AppLocalizations t = AppLocalizations.of(context);
     final bool isCorrect = choiceId == _round.answerId;
 
     // Score only the first attempt of each round.
@@ -124,14 +146,14 @@ class _GameShellState extends State<GameShell> {
       _wrongStreak = 0;
       _locked = true;
       GentleFeedback.correct(context);
-      TtsService.instance.play('Very good');
+      TtsService.instance.play(t.veryGood);
       await Future<void>.delayed(const Duration(milliseconds: 1200));
       if (!mounted) return;
       _advance();
     } else {
       _wrongStreak++;
       GentleFeedback.tryAgain(context);
-      TtsService.instance.play("Let's try again");
+      TtsService.instance.play(t.letsTryAgain);
       if (_wrongStreak >= 3) {
         // Show the gentle feedback, then switch to Calm mode.
         Future<void>.delayed(const Duration(milliseconds: 1200), _toCalm);
@@ -150,7 +172,6 @@ class _GameShellState extends State<GameShell> {
       _locked = false;
     });
     _resetIdle();
-    _speakPrompt();
   }
 
   Future<void> _finish() async {
@@ -180,6 +201,8 @@ class _GameShellState extends State<GameShell> {
     if (_finished) {
       return _RewardView(correct: _correct, total: _total);
     }
+    final String prompt = _localizedPrompt(context);
+    _autoSpeak(prompt);
     return Scaffold(
       appBar: AppBar(title: Text(widget.title)),
       body: SafeArea(
@@ -190,7 +213,7 @@ class _GameShellState extends State<GameShell> {
               BigProgressDots(total: _total, current: _index),
               const SizedBox(height: 20),
               SpeakLabel(
-                text: _round.prompt,
+                text: prompt,
                 audioPath: _round.promptAudioPath,
               ),
               const SizedBox(height: 12),

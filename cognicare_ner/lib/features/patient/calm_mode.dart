@@ -11,6 +11,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/big_button.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Calm / Home-Simulation mode.
 ///
@@ -127,10 +128,10 @@ class _CalmModeScreenState extends State<CalmModeScreen> {
             padding: const EdgeInsets.all(AppTheme.screenPadding),
             child: Column(
               children: [
-                Expanded(child: Center(child: _stage())),
+                Expanded(child: Center(child: _stage(context))),
                 const SizedBox(height: 20),
                 BigButton(
-                  label: 'Home',
+                  label: AppLocalizations.of(context).home,
                   icon: Icons.home_rounded,
                   onTap: () => Navigator.of(context).maybePop(),
                 ),
@@ -142,7 +143,7 @@ class _CalmModeScreenState extends State<CalmModeScreen> {
     );
   }
 
-  Widget _stage() {
+  Widget _stage(BuildContext context) {
     if (_photos.isEmpty) {
       return Column(
         mainAxisSize: MainAxisSize.min,
@@ -150,7 +151,8 @@ class _CalmModeScreenState extends State<CalmModeScreen> {
           const Icon(Icons.self_improvement_rounded,
               size: 140, color: AppColors.secondary),
           const SizedBox(height: 24),
-          Text('Relax', textAlign: TextAlign.center, style: AppText.gameQuestion()),
+          Text(AppLocalizations.of(context).relax,
+              textAlign: TextAlign.center, style: AppText.gameQuestion()),
           const SizedBox(height: 8),
           Text(
             'Take a slow, easy breath.',

@@ -3,11 +3,13 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import '../../core/models/patient_profile.dart';
 import '../../core/services/local_db.dart';
+import '../../core/services/locale_controller.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/big_button.dart';
 import '../../core/widgets/big_card.dart';
+import '../../l10n/app_localizations.dart';
 import 'calm_mode.dart';
 import 'games/family_game.dart';
 import 'games/pattern_game.dart';
@@ -47,6 +49,13 @@ class PatientHome extends StatelessWidget {
             valueListenable: LocalDb.profileBox.listenable(),
             builder: (context, _, _) {
               final PatientProfile? profile = LocalDb.getProfile(patientId);
+              final AppLocalizations t = AppLocalizations.of(context);
+              if (profile != null) {
+                // Patient locale follows their first chosen language.
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  LocaleController.setFromLanguages(profile.languages);
+                });
+              }
               return Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -78,7 +87,7 @@ class PatientHome extends StatelessWidget {
                     )
                   else ...[
                     BigButton(
-                      label: 'What comes next?',
+                      label: t.whatComesNext,
                       icon: Icons.extension_rounded,
                       onTap: () => _open(
                         context,
@@ -87,7 +96,7 @@ class PatientHome extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     BigButton(
-                      label: 'Who is this?',
+                      label: t.whoIsThis,
                       icon: Icons.face_rounded,
                       color: AppColors.secondary,
                       onTap: () => _open(
@@ -97,7 +106,7 @@ class PatientHome extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     BigButton(
-                      label: 'Whose voice is this?',
+                      label: t.whoseVoiceIsThis,
                       icon: Icons.hearing_rounded,
                       color: AppColors.success,
                       onTap: () => _open(
@@ -107,7 +116,7 @@ class PatientHome extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     BigButton(
-                      label: 'Relax',
+                      label: t.relax,
                       icon: Icons.self_improvement_rounded,
                       color: AppColors.secondary,
                       onTap: () => _open(context, const CalmModeScreen()),

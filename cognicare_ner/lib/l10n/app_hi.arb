@@ -1,0 +1,18 @@
+{
+  "@@locale": "hi",
+  "whatComesNext": "आगे क्या आता है?",
+  "whoIsThis": "यह कौन है?",
+  "whoseVoiceIsThis": "यह किसकी आवाज़ है?",
+  "play": "खेलें",
+  "relax": "आराम करें",
+  "home": "घर",
+  "again": "फिर से",
+  "yes": "हाँ",
+  "no": "नहीं",
+  "veryGood": "बहुत बढ़िया!",
+  "letsTryAgain": "चलिए फिर कोशिश करें",
+  "reminderMedicine": "दवा लेने का समय",
+  "reminderHydration": "थोड़ा पानी पिएँ",
+  "reminderMeal": "खाने का समय",
+  "reminderAppointment": "आपकी एक अपॉइंटमेंट है"
+}

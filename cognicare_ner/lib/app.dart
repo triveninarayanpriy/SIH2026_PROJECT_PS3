@@ -1,23 +1,29 @@
+import 'package:flutter/cupertino.dart'
+    show CupertinoLocalizations, DefaultCupertinoLocalizations;
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'core/services/local_db.dart';
+import 'core/services/locale_controller.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/role_picker_screen.dart';
 import 'core/widgets/theme_preview_screen.dart';
 import 'features/caregiver/caregiver_gate.dart';
 import 'features/doctor/doctor_gate.dart';
 import 'features/patient/patient_gate.dart';
+import 'l10n/app_localizations.dart';
 
 /// Root widget for CogniCare NER.
 ///
 /// Two modes:
 ///  * Locked per-role build (`roleSwitching == false`): branches on the
-///    compile-time [role] into exactly one role's flow. A build only ever
-///    contains one role's screens (route guard by construction).
-///  * Unified demo app (`roleSwitching == true`, via `main.dart`): shows a role
-///    picker, remembers the choice, and offers a one-tap "Role" switch — so a
-///    single device/app can move between caregiver and patient views.
+///    compile-time [role] into exactly one role's flow.
+///  * Unified demo app (`roleSwitching == true`, via `main.dart`): role picker
+///    + one-tap "Role" switch.
+///
+/// The active locale is driven by [LocaleController] (patient app sets it from
+/// the patient's language; caregiver/doctor default to English).
 class CogniCareApp extends StatelessWidget {
   const CogniCareApp({
     super.key,
@@ -25,50 +31,59 @@ class CogniCareApp extends StatelessWidget {
     this.roleSwitching = false,
   });
 
-  /// Compile-time role for locked builds; ignored in role-switching mode.
   final String role;
-
-  /// When true, runs the unified demo app (picker + in-app switch).
   final bool roleSwitching;
 
-  /// Navigator key used by the role switch to pop back to the home route.
   static final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'CogniCare NER',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
-      navigatorKey: roleSwitching ? navKey : null,
-      routes: {
-        '/theme-preview': (_) => const ThemePreviewScreen(),
+    return ValueListenableBuilder<Locale?>(
+      valueListenable: LocaleController.notifier,
+      builder: (context, locale, _) {
+        return MaterialApp(
+          title: 'CogniCare NER',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.light(),
+          locale: locale,
+          localizationsDelegates: <LocalizationsDelegate<dynamic>>[
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+            // Fallbacks so locales the framework doesn't ship (e.g. Bodo,
+            // Manipuri) still render Material/Cupertino chrome in English.
+            const _FallbackMaterialLocalizationsDelegate(),
+            const _FallbackCupertinoLocalizationsDelegate(),
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          navigatorKey: roleSwitching ? navKey : null,
+          routes: {
+            '/theme-preview': (_) => const ThemePreviewScreen(),
+          },
+          home:
+              roleSwitching ? const _SwitchableHome() : _RoleGate(role: role),
+          builder: roleSwitching
+              ? (context, child) => Stack(
+                    textDirection: TextDirection.ltr,
+                    children: [
+                      child ?? const SizedBox.shrink(),
+                      const Positioned(
+                        left: 12,
+                        bottom: 12,
+                        child: SafeArea(
+                          child: ExcludeFocus(child: _SwitchRoleButton()),
+                        ),
+                      ),
+                    ],
+                  )
+              : null,
+        );
       },
-      home: roleSwitching ? const _SwitchableHome() : _RoleGate(role: role),
-      builder: roleSwitching
-          ? (context, child) => Stack(
-                textDirection: TextDirection.ltr,
-                children: [
-                  // Non-positioned child so the Stack takes the app's size.
-                  child ?? const SizedBox.shrink(),
-                  // ExcludeFocus keeps this out-of-Navigator button out of the
-                  // view's focus traversal, which otherwise asserts on Flutter
-                  // web when the browser focuses the view before first layout.
-                  const Positioned(
-                    left: 12,
-                    bottom: 12,
-                    child: SafeArea(
-                      child: ExcludeFocus(child: _SwitchRoleButton()),
-                    ),
-                  ),
-                ],
-              )
-          : null,
     );
   }
 }
 
-/// Reads the runtime-selected role and shows the picker or the matching gate.
 class _SwitchableHome extends StatelessWidget {
   const _SwitchableHome();
 
@@ -95,6 +110,13 @@ class _RoleGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (role == 'caregiver' || role == 'doctor') {
+      // Caregiver / doctor default to English. (Patient locale is set from the
+      // profile in the patient home.)
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        LocaleController.setLocale(const Locale('en'));
+      });
+    }
     switch (role) {
       case 'patient':
         return const PatientGate();
@@ -108,12 +130,10 @@ class _RoleGate extends StatelessWidget {
   }
 }
 
-/// Small always-on-top "Role" switch, shown only in the unified demo app.
 class _SwitchRoleButton extends StatelessWidget {
   const _SwitchRoleButton();
 
   void _switch() {
-    // Return to the home route, then drop the active role -> role picker.
     CogniCareApp.navKey.currentState?.popUntil((route) => route.isFirst);
     LocalDb.clearActiveRole();
   }
@@ -169,4 +189,37 @@ class _UnknownRole extends StatelessWidget {
       ),
     );
   }
+}
+
+class _FallbackMaterialLocalizationsDelegate
+    extends LocalizationsDelegate<MaterialLocalizations> {
+  const _FallbackMaterialLocalizationsDelegate();
+
+  @override
+  bool isSupported(Locale locale) => true;
+
+  @override
+  Future<MaterialLocalizations> load(Locale locale) =>
+      DefaultMaterialLocalizations.load(locale);
+
+  @override
+  bool shouldReload(covariant LocalizationsDelegate<MaterialLocalizations> old) =>
+      false;
+}
+
+class _FallbackCupertinoLocalizationsDelegate
+    extends LocalizationsDelegate<CupertinoLocalizations> {
+  const _FallbackCupertinoLocalizationsDelegate();
+
+  @override
+  bool isSupported(Locale locale) => true;
+
+  @override
+  Future<CupertinoLocalizations> load(Locale locale) =>
+      DefaultCupertinoLocalizations.load(locale);
+
+  @override
+  bool shouldReload(
+          covariant LocalizationsDelegate<CupertinoLocalizations> old) =>
+      false;
 }

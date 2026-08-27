@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text.dart';
 import '../theme/app_theme.dart';
@@ -17,7 +18,7 @@ class GentleFeedback {
         icon: Icons.check_circle_rounded,
         color: AppColors.correct,
         surface: AppColors.correctSurface,
-        message: 'Very good!',
+        message: AppLocalizations.of(context).veryGood,
       );
 
   static void tryAgain(BuildContext context) => _show(
@@ -25,7 +26,7 @@ class GentleFeedback {
         icon: Icons.favorite_rounded,
         color: AppColors.tryAgain,
         surface: AppColors.tryAgainSurface,
-        message: "Let's try again",
+        message: AppLocalizations.of(context).letsTryAgain,
       );
 
   static void _show(
