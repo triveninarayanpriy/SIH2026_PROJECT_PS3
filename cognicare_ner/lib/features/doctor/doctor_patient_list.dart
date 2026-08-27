@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
-import '../../core/models/patient_profile.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text.dart';
 import '../../core/widgets/big_card.dart';
 import 'doctor_patient_detail.dart';
+import 'doctor_repository.dart';
 
-/// Doctor web dashboard: manage multiple patients.
+const Color _clinicalRed = Color(0xFFD64545);
+
+/// Doctor web dashboard — read-only patient list.
 ///
-/// A doctor adds patients by their pairing code (links `doctors/{uid}` ->
-/// patientIds[]), sees them as a responsive grid of cards, and opens any card
-/// to a read-only patient detail (profile, performance, sessions, alerts).
+/// Reads the doctor's patientIds[] and shows each patient with name, stage,
+/// last-active, and a red dot for any unseen cognitive_drop alert. Cached
+/// locally for a snappy load and offline viewing.
 class DoctorPatientList extends StatefulWidget {
   const DoctorPatientList({super.key, required this.uid});
 
@@ -26,9 +29,7 @@ class _DoctorPatientListState extends State<DoctorPatientList> {
   final FirestoreService _fs = FirestoreService();
   final TextEditingController _code = TextEditingController();
 
-  List<PatientProfile> _patients = <PatientProfile>[];
-  List<String> _unresolvedIds = <String>[];
-  Set<String> _alerted = <String>{};
+  List<DoctorPatientRow> _rows = const <DoctorPatientRow>[];
   bool _loading = true;
   bool _busy = false;
   String? _error;
@@ -36,7 +37,9 @@ class _DoctorPatientListState extends State<DoctorPatientList> {
   @override
   void initState() {
     super.initState();
-    _load();
+    _rows = DoctorRepository.cachedRows(widget.uid);
+    _loading = _rows.isEmpty;
+    _refresh();
   }
 
   @override
@@ -45,38 +48,23 @@ class _DoctorPatientListState extends State<DoctorPatientList> {
     super.dispose();
   }
 
-  Future<void> _load() async {
-    setState(() => _loading = true);
-    final List<PatientProfile> patients = <PatientProfile>[];
-    final List<String> unresolved = <String>[];
-    final Set<String> alerted = <String>{};
+  Future<void> _refresh() async {
     try {
-      final List<String> ids =
-          await _fs.patientIdsForRole(uid: widget.uid, isDoctor: true);
-      for (final String id in ids) {
-        final Map<String, dynamic>? doc = await _fs.fetchPatientDoc(id);
-        if (doc != null && doc.isNotEmpty) {
-          patients.add(PatientProfile.fromMap(doc));
-        } else {
-          // Linked but its patient doc hasn't synced to the cloud yet.
-          unresolved.add(id);
-        }
-        // Flag the patient row if there is any unseen cognitive-drop alert.
-        final List<Map<String, dynamic>> alerts = await _fs.fetchAlerts(id);
-        final bool hasUnseen = alerts.any((a) => (a['seen'] as bool?) != true);
-        if (hasUnseen) alerted.add(id);
-      }
-      _error = null;
+      final List<DoctorPatientRow> rows =
+          await DoctorRepository.fetchRows(widget.uid);
+      if (!mounted) return;
+      setState(() {
+        _rows = rows;
+        _error = null;
+        _loading = false;
+      });
     } catch (_) {
-      _error = 'Could not load patients. Check your connection.';
+      if (!mounted) return;
+      setState(() {
+        _error = 'Offline — showing cached data.';
+        _loading = false;
+      });
     }
-    if (!mounted) return;
-    setState(() {
-      _patients = patients;
-      _unresolvedIds = unresolved;
-      _alerted = alerted;
-      _loading = false;
-    });
   }
 
   Future<void> _addByCode() async {
@@ -85,12 +73,9 @@ class _DoctorPatientListState extends State<DoctorPatientList> {
     setState(() => _busy = true);
     try {
       await _fs.linkPatientToRole(
-        uid: widget.uid,
-        patientId: code,
-        isDoctor: true,
-      );
+          uid: widget.uid, patientId: code, isDoctor: true);
       _code.clear();
-      await _load();
+      await _refresh();
     } catch (_) {
       if (mounted) setState(() => _error = 'Could not add that code.');
     } finally {
@@ -98,10 +83,10 @@ class _DoctorPatientListState extends State<DoctorPatientList> {
     }
   }
 
-  void _open(String patientId) {
+  void _open(String id) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => DoctorPatientDetail(patientId: patientId),
+        builder: (_) => DoctorPatientDetail(patientId: id),
       ),
     );
   }
@@ -110,12 +95,12 @@ class _DoctorPatientListState extends State<DoctorPatientList> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Doctor dashboard'),
+        title: const Text('Patients'),
         actions: [
           IconButton(
             tooltip: 'Refresh',
             icon: const Icon(Icons.refresh_rounded),
-            onPressed: _loading ? null : _load,
+            onPressed: _loading ? null : _refresh,
           ),
           IconButton(
             tooltip: 'Sign out',
@@ -126,27 +111,35 @@ class _DoctorPatientListState extends State<DoctorPatientList> {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 960),
+          constraints: const BoxConstraints(maxWidth: 820),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _addPatientCard(),
+                _addCard(),
                 const SizedBox(height: 20),
                 if (_error != null) ...[
-                  Text(_error!, style: _t(15, color: AppColors.gentleWarning)),
-                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Icon(Icons.cloud_off_rounded,
+                          size: 18, color: AppColors.textMuted),
+                      const SizedBox(width: 8),
+                      Text(_error!,
+                          style: _t(14, color: AppColors.textMuted)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
                 ],
-                Text('Patients (${_patients.length + _unresolvedIds.length})',
-                    style: _t(20, weight: FontWeight.w500)),
+                Text('Patients (${_rows.length})',
+                    style: _t(20, weight: FontWeight.w600)),
                 const SizedBox(height: 12),
                 if (_loading)
                   const Padding(
                     padding: EdgeInsets.all(24),
                     child: Center(child: CircularProgressIndicator()),
                   )
-                else if (_patients.isEmpty && _unresolvedIds.isEmpty)
+                else if (_rows.isEmpty)
                   BigCard(
                     child: Text(
                       'No patients yet. Add one with a pairing code above.',
@@ -154,29 +147,7 @@ class _DoctorPatientListState extends State<DoctorPatientList> {
                     ),
                   )
                 else
-                  Wrap(
-                    spacing: 16,
-                    runSpacing: 16,
-                    children: [
-                      for (final PatientProfile p in _patients)
-                        _patientCard(
-                          id: p.id,
-                          title: p.name.isEmpty ? p.id : p.name,
-                          subtitle: 'Age ${p.age} · Stage ${p.stage}',
-                          resolved: true,
-                          alerted: _alerted.contains(p.id),
-                        ),
-                      for (final String id in _unresolvedIds)
-                        _patientCard(
-                          id: id,
-                          title: id,
-                          subtitle: 'Waiting for cloud sync…',
-                          resolved: false,
-                          alerted: _alerted.contains(id),
-                        ),
-                    ],
-                  ),
-                const SizedBox(height: 24),
+                  for (final DoctorPatientRow r in _rows) _rowTile(r),
               ],
             ),
           ),
@@ -185,79 +156,61 @@ class _DoctorPatientListState extends State<DoctorPatientList> {
     );
   }
 
-  Widget _addPatientCard() {
+  Widget _addCard() {
     return BigCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text('Add a patient by code', style: _t(18, weight: FontWeight.w500)),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _code,
-                  textCapitalization: TextCapitalization.characters,
-                  style: _t(16),
-                  decoration: InputDecoration(
-                    hintText: 'Pairing code (e.g. ABC123)',
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 14),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onSubmitted: (_) => _addByCode(),
-                ),
+          Expanded(
+            child: TextField(
+              controller: _code,
+              textCapitalization: TextCapitalization.characters,
+              style: _t(16),
+              decoration: InputDecoration(
+                labelText: 'Add patient by pairing code',
+                isDense: true,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
-              const SizedBox(width: 12),
-              _busy
-                  ? const SizedBox(
-                      width: 44,
-                      height: 44,
-                      child: Center(child: CircularProgressIndicator()),
-                    )
-                  : FilledButton.icon(
-                      onPressed: _addByCode,
-                      icon: const Icon(Icons.add_rounded),
-                      label: const Text('Add'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.secondary,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 18),
-                      ),
-                    ),
-            ],
+              onSubmitted: (_) => _addByCode(),
+            ),
           ),
+          const SizedBox(width: 12),
+          _busy
+              ? const SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: Center(child: CircularProgressIndicator()))
+              : FilledButton.icon(
+                  onPressed: _addByCode,
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Add'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.secondary,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 18, vertical: 18),
+                  ),
+                ),
         ],
       ),
     );
   }
 
-  Widget _patientCard({
-    required String id,
-    required String title,
-    required String subtitle,
-    required bool resolved,
-    required bool alerted,
-  }) {
-    return SizedBox(
-      width: 280,
+  Widget _rowTile(DoctorPatientRow r) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
       child: Material(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: resolved ? () => _open(id) : null,
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => _open(r.id),
           child: Container(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: alerted ? AppColors.gentleWarning : AppColors.border,
-                width: alerted ? 2 : 1.5,
-              ),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.border, width: 1.5),
             ),
             child: Row(
               children: [
@@ -265,9 +218,9 @@ class _DoctorPatientListState extends State<DoctorPatientList> {
                   radius: 22,
                   backgroundColor: AppColors.primarySoft,
                   child: Text(
-                    title.isNotEmpty ? title[0].toUpperCase() : '?',
+                    r.name.isNotEmpty ? r.name[0].toUpperCase() : '?',
                     style: _t(18,
-                        color: AppColors.primary, weight: FontWeight.w500),
+                        color: AppColors.primary, weight: FontWeight.w600),
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -275,33 +228,30 @@ class _DoctorPatientListState extends State<DoctorPatientList> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title,
+                      Text(r.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: _t(17, weight: FontWeight.w500)),
+                          style: _t(17, weight: FontWeight.w600)),
                       const SizedBox(height: 4),
-                      Text(subtitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: _t(13, color: AppColors.textMuted)),
-                      if (alerted) ...[
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            const Icon(Icons.warning_amber_rounded,
-                                size: 16, color: AppColors.gentleWarning),
-                            const SizedBox(width: 4),
-                            Text('Possible decline',
-                                style: _t(12, color: AppColors.gentleWarning)),
-                          ],
-                        ),
-                      ],
+                      Text(
+                        'Stage ${r.stage}  ·  Last active ${_lastActive(r.lastActive)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: _t(13, color: AppColors.textMuted),
+                      ),
                     ],
                   ),
                 ),
-                if (resolved)
-                  const Icon(Icons.chevron_right_rounded,
-                      color: AppColors.textMuted),
+                if (r.hasAlert)
+                  Container(
+                    width: 12,
+                    height: 12,
+                    margin: const EdgeInsets.only(right: 10),
+                    decoration: const BoxDecoration(
+                        color: _clinicalRed, shape: BoxShape.circle),
+                  ),
+                const Icon(Icons.chevron_right_rounded,
+                    color: AppColors.textMuted),
               ],
             ),
           ),
@@ -310,10 +260,16 @@ class _DoctorPatientListState extends State<DoctorPatientList> {
     );
   }
 
-  // Compact text helper for the (non-elderly) doctor web surface.
+  String _lastActive(DateTime? at) {
+    if (at == null) return '—';
+    final int days = DateTime.now().difference(at).inDays;
+    if (days <= 0) return 'today';
+    if (days == 1) return 'yesterday';
+    if (days < 30) return '$days days ago';
+    return DateFormat('MMM d, y').format(at);
+  }
+
   TextStyle _t(double size, {Color? color, FontWeight? weight}) =>
-      AppText.body(color: color).copyWith(
-        fontSize: size,
-        fontWeight: weight ?? FontWeight.w400,
-      );
+      AppText.body(color: color)
+          .copyWith(fontSize: size, fontWeight: weight ?? FontWeight.w400);
 }

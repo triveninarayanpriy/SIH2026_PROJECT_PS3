@@ -241,4 +241,16 @@ class FirestoreService {
 
   Future<List<Map<String, dynamic>>> fetchAlerts(String patientId) =>
       _fetchAll(alerts(patientId));
+
+  /// The timestamp of the patient's most recent session, or null. ('at' is an
+  /// ISO-8601 string, which sorts chronologically.)
+  Future<DateTime?> fetchLatestSessionAt(String patientId) async {
+    final snap = await sessions(patientId)
+        .orderBy('at', descending: true)
+        .limit(1)
+        .get();
+    if (snap.docs.isEmpty) return null;
+    final Object? at = snap.docs.first.data()['at'];
+    return at is String ? DateTime.tryParse(at) : null;
+  }
 }
