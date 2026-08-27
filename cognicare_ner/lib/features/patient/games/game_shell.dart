@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
@@ -15,6 +17,7 @@ import '../../../core/widgets/big_button.dart';
 import '../../../core/widgets/big_progress_dots.dart';
 import '../../../core/widgets/gentle_feedback.dart';
 import '../../../core/widgets/speak_label.dart';
+import '../calm_mode.dart';
 import 'game_models.dart';
 import 'game_tile.dart';
 
@@ -52,12 +55,19 @@ class GameShell extends StatefulWidget {
 class _GameShellState extends State<GameShell> {
   final Uuid _uuid = const Uuid();
 
+  // Frustration protocol: 3 wrong in a row, or this much idle time, gently
+  // switches to Calm mode.
+  static const Duration _idleTimeout = Duration(seconds: 30);
+
   int _index = 0;
   int _correct = 0;
+  int _wrongStreak = 0;
   bool _roundScored = false; // first attempt on this round has been counted
   bool _locked = false; // ignore taps while a correct answer advances
   bool _finished = false;
+  bool _leaving = false; // switching to Calm mode
   bool _listening = false; // optional voice-answer state
+  Timer? _idleTimer;
   late final DateTime _start;
 
   int get _total => widget.rounds.length;
@@ -67,7 +77,31 @@ class _GameShellState extends State<GameShell> {
   void initState() {
     super.initState();
     _start = DateTime.now();
+    _resetIdle();
     _speakPrompt();
+  }
+
+  @override
+  void dispose() {
+    _idleTimer?.cancel();
+    super.dispose();
+  }
+
+  /// Restart the idle countdown after any interaction / new round.
+  void _resetIdle() {
+    _idleTimer?.cancel();
+    if (_finished || _leaving) return;
+    _idleTimer = Timer(_idleTimeout, _toCalm);
+  }
+
+  /// Gently leave the game for Calm mode (frustration protocol).
+  void _toCalm() {
+    if (!mounted || _finished || _leaving) return;
+    _leaving = true;
+    _idleTimer?.cancel();
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(builder: (_) => const CalmModeScreen()),
+    );
   }
 
   void _speakPrompt() {
@@ -76,7 +110,8 @@ class _GameShellState extends State<GameShell> {
   }
 
   Future<void> _answer(String choiceId) async {
-    if (_locked) return;
+    if (_locked || _leaving) return;
+    _resetIdle();
     final bool isCorrect = choiceId == _round.answerId;
 
     // Score only the first attempt of each round.
@@ -86,6 +121,7 @@ class _GameShellState extends State<GameShell> {
     }
 
     if (isCorrect) {
+      _wrongStreak = 0;
       _locked = true;
       GentleFeedback.correct(context);
       TtsService.instance.play('Very good');
@@ -93,8 +129,13 @@ class _GameShellState extends State<GameShell> {
       if (!mounted) return;
       _advance();
     } else {
+      _wrongStreak++;
       GentleFeedback.tryAgain(context);
       TtsService.instance.play("Let's try again");
+      if (_wrongStreak >= 3) {
+        // Show the gentle feedback, then switch to Calm mode.
+        Future<void>.delayed(const Duration(milliseconds: 1200), _toCalm);
+      }
     }
   }
 
@@ -108,10 +149,12 @@ class _GameShellState extends State<GameShell> {
       _roundScored = false;
       _locked = false;
     });
+    _resetIdle();
     _speakPrompt();
   }
 
   Future<void> _finish() async {
+    _idleTimer?.cancel();
     final GameResult result = GameResult(
       id: _uuid.v4(),
       patientId: widget.patientId,
@@ -184,7 +227,8 @@ class _GameShellState extends State<GameShell> {
   }
 
   Future<void> _listen() async {
-    if (_locked || _listening) return;
+    if (_locked || _listening || _leaving) return;
+    _resetIdle();
     final bool ok = await SttService.instance.ensureInit();
     if (!mounted) return;
     if (!ok) {

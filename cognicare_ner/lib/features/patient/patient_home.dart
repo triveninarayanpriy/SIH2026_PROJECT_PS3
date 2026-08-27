@@ -8,6 +8,7 @@ import '../../core/theme/app_text.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/big_button.dart';
 import '../../core/widgets/big_card.dart';
+import 'calm_mode.dart';
 import 'games/family_game.dart';
 import 'games/pattern_game.dart';
 import 'games/voice_game.dart';
@@ -21,8 +22,8 @@ class PatientHome extends StatelessWidget {
 
   final String patientId;
 
-  void _open(BuildContext context, Widget game) {
-    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => game));
+  void _open(BuildContext context, Widget screen) {
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
   }
 
   @override
@@ -103,6 +104,13 @@ class PatientHome extends StatelessWidget {
                         context,
                         VoiceGame(patientId: patientId),
                       ),
+                    ),
+                    const SizedBox(height: 16),
+                    BigButton(
+                      label: 'Relax',
+                      icon: Icons.self_improvement_rounded,
+                      color: AppColors.secondary,
+                      onTap: () => _open(context, const CalmModeScreen()),
                     ),
                   ],
                 ],
