@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
+import '../ai/anomaly_detector.dart';
 import '../models/game_result.dart';
 import '../services/local_db.dart';
 import '../services/sync_service.dart';
@@ -60,6 +61,52 @@ class _ThemePreviewScreenState extends State<ThemePreviewScreen> {
     await SyncService.instance.syncNow();
     if (!mounted) return;
     setState(() => _queueLen = LocalDb.syncQueueLength());
+  }
+
+  /// Debug: seed a ~2-week decline in the 'memory' domain for the current
+  /// patient (or the demo patient) and run the detector so an alert fires on
+  /// demand. Clears that domain's prior sessions/alerts first so it's repeatable.
+  Future<void> _seedDecline() async {
+    final String patient = LocalDb.caregiverPatientId() ??
+        LocalDb.linkedPatientId() ??
+        _demoPatientId;
+    const String domain = 'memory';
+
+    for (final GameResult s in LocalDb.allSessions()
+        .where((s) => s.patientId == patient && s.domain == domain)
+        .toList()) {
+      await LocalDb.deleteSession(s.id);
+    }
+    for (final a in LocalDb.allAlerts()
+        .where((a) => a.patientId == patient && a.domain == domain)
+        .toList()) {
+      await LocalDb.deleteAlert(a.id);
+    }
+
+    final DateTime base = DateTime.now().subtract(const Duration(days: 14));
+    for (int i = 0; i < 8; i++) {
+      final bool strong = i < 5; // 5 strong (1.0) then 3 weak (0.4)
+      await SyncService.instance.saveGameResult(GameResult(
+        id: const Uuid().v4(),
+        patientId: patient,
+        game: 'faces',
+        domain: domain,
+        correct: strong ? 5 : 2,
+        total: 5,
+        durationMs: 4000,
+        difficulty: 2,
+        at: base.add(Duration(days: i)),
+      ));
+    }
+
+    final List<Object?> raised =
+        await AnomalyDetector.instance.runForPatient(patient);
+    if (!mounted) return;
+    setState(() => _queueLen = LocalDb.syncQueueLength());
+    final String msg = raised.isEmpty
+        ? 'No new alert (within the 7-day debounce).'
+        : 'Alert raised for "$patient" — memory decline detected.';
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
   @override
@@ -193,6 +240,14 @@ class _ThemePreviewScreenState extends State<ThemePreviewScreen> {
             _gap(),
             _section('Adaptive difficulty (stored)'),
             _difficultyReadout(),
+            _gap(),
+            _section('Anomaly detection'),
+            BigButton(
+              label: 'Seed declining data (demo alert)',
+              icon: Icons.trending_down_rounded,
+              color: AppColors.gentleWarning,
+              onTap: _seedDecline,
+            ),
             const SizedBox(height: 32),
           ],
         ),

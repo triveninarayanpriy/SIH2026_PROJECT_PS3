@@ -28,6 +28,7 @@ class _DoctorPatientListState extends State<DoctorPatientList> {
 
   List<PatientProfile> _patients = <PatientProfile>[];
   List<String> _unresolvedIds = <String>[];
+  Set<String> _alerted = <String>{};
   bool _loading = true;
   bool _busy = false;
   String? _error;
@@ -48,6 +49,7 @@ class _DoctorPatientListState extends State<DoctorPatientList> {
     setState(() => _loading = true);
     final List<PatientProfile> patients = <PatientProfile>[];
     final List<String> unresolved = <String>[];
+    final Set<String> alerted = <String>{};
     try {
       final List<String> ids =
           await _fs.patientIdsForRole(uid: widget.uid, isDoctor: true);
@@ -59,6 +61,10 @@ class _DoctorPatientListState extends State<DoctorPatientList> {
           // Linked but its patient doc hasn't synced to the cloud yet.
           unresolved.add(id);
         }
+        // Flag the patient row if there is any unseen cognitive-drop alert.
+        final List<Map<String, dynamic>> alerts = await _fs.fetchAlerts(id);
+        final bool hasUnseen = alerts.any((a) => (a['seen'] as bool?) != true);
+        if (hasUnseen) alerted.add(id);
       }
       _error = null;
     } catch (_) {
@@ -68,6 +74,7 @@ class _DoctorPatientListState extends State<DoctorPatientList> {
     setState(() {
       _patients = patients;
       _unresolvedIds = unresolved;
+      _alerted = alerted;
       _loading = false;
     });
   }
@@ -157,6 +164,7 @@ class _DoctorPatientListState extends State<DoctorPatientList> {
                           title: p.name.isEmpty ? p.id : p.name,
                           subtitle: 'Age ${p.age} · Stage ${p.stage}',
                           resolved: true,
+                          alerted: _alerted.contains(p.id),
                         ),
                       for (final String id in _unresolvedIds)
                         _patientCard(
@@ -164,6 +172,7 @@ class _DoctorPatientListState extends State<DoctorPatientList> {
                           title: id,
                           subtitle: 'Waiting for cloud sync…',
                           resolved: false,
+                          alerted: _alerted.contains(id),
                         ),
                     ],
                   ),
@@ -231,6 +240,7 @@ class _DoctorPatientListState extends State<DoctorPatientList> {
     required String title,
     required String subtitle,
     required bool resolved,
+    required bool alerted,
   }) {
     return SizedBox(
       width: 280,
@@ -244,7 +254,10 @@ class _DoctorPatientListState extends State<DoctorPatientList> {
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border, width: 1.5),
+              border: Border.all(
+                color: alerted ? AppColors.gentleWarning : AppColors.border,
+                width: alerted ? 2 : 1.5,
+              ),
             ),
             child: Row(
               children: [
@@ -271,6 +284,18 @@ class _DoctorPatientListState extends State<DoctorPatientList> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: _t(13, color: AppColors.textMuted)),
+                      if (alerted) ...[
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            const Icon(Icons.warning_amber_rounded,
+                                size: 16, color: AppColors.gentleWarning),
+                            const SizedBox(width: 4),
+                            Text('Possible decline',
+                                style: _t(12, color: AppColors.gentleWarning)),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../core/ai/anomaly_detector.dart';
 import '../../../core/models/game_result.dart';
 import '../../../core/models/media_item.dart';
 import '../../../core/services/local_db.dart';
@@ -122,6 +123,9 @@ class _GameShellState extends State<GameShell> {
     );
     // Write-through: local first (+ enqueue for cloud). Never blocks the UI.
     await SyncService.instance.saveGameResult(result);
+    // Check each domain for a cognitive drop (caregiver/doctor only — the
+    // patient is never alarmed). Runs on the just-updated local history.
+    await AnomalyDetector.instance.runForPatient(widget.patientId);
     if (!mounted) return;
     setState(() => _finished = true);
   }
