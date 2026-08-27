@@ -31,6 +31,7 @@ class LocalDb {
   // Keys used in the appState box.
   static const String kLinkedPatientId = 'linkedPatientId';
   static const String kCaregiverPatientId = 'caregiverPatientId';
+  static const String kActiveRole = 'activeRole';
 
   static late Box<PatientProfile> _profile;
   static late Box<MediaItem> _media;
@@ -194,4 +195,13 @@ class LocalDb {
 
   static Future<void> setCaregiverPatientId(String id) =>
       _appState.put(kCaregiverPatientId, id);
+
+  /// The runtime-selected role in the unified demo app ('patient' |
+  /// 'caregiver' | 'doctor'), or null when the role picker should be shown.
+  static String? activeRole() => _appState.get(kActiveRole) as String?;
+
+  static Future<void> setActiveRole(String role) =>
+      _appState.put(kActiveRole, role);
+
+  static Future<void> clearActiveRole() => _appState.delete(kActiveRole);
 }

@@ -37,6 +37,20 @@ class _PatientGateState extends State<PatientGate> {
     }
   }
 
+  /// A patient id already present on this device (caregiver-created), or null.
+  /// Persists it as the linked id so the link survives restarts.
+  String? _autoLinkId() {
+    String? candidate = LocalDb.caregiverPatientId();
+    if (candidate == null) {
+      final profiles = LocalDb.allProfiles();
+      if (profiles.length == 1) candidate = profiles.first.id;
+    }
+    if (candidate != null) {
+      LocalDb.setLinkedPatientId(candidate);
+    }
+    return candidate;
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<void>(
@@ -49,7 +63,12 @@ class _PatientGateState extends State<PatientGate> {
           valueListenable: LocalDb.appStateBox
               .listenable(keys: const <String>[LocalDb.kLinkedPatientId]),
           builder: (context, _, _) {
-            final String? patientId = LocalDb.linkedPatientId();
+            String? patientId = LocalDb.linkedPatientId();
+            // Same-device auto-link: if this device already has the patient's
+            // profile (e.g. the caregiver set it up here), link automatically so
+            // no pairing code needs to be typed. A second, separate device has
+            // no local profile, so it still shows the pairing screen.
+            patientId ??= _autoLinkId();
             if (patientId == null) return const PatientSetupScreen();
             return PatientHome(patientId: patientId);
           },
