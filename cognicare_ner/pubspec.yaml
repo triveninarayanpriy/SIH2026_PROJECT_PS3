@@ -73,6 +73,7 @@ flutter:
   # Registered asset directories. Placeholder .gitkeep files keep the
   # directories present until real assets are added.
   assets:
+    - .env
     - assets/
     - assets/sounds/
     - assets/images/

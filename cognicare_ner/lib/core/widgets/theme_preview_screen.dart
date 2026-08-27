@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../ai/anomaly_detector.dart';
 import '../models/game_result.dart';
+import '../services/ai_service.dart';
 import '../services/local_db.dart';
 import '../services/sync_service.dart';
 import '../theme/app_colors.dart';
@@ -248,10 +249,63 @@ class _ThemePreviewScreenState extends State<ThemePreviewScreen> {
               color: AppColors.gentleWarning,
               onTap: _seedDecline,
             ),
+            _gap(),
+            _section('AI (Tier 2)'),
+            _aiReadout(),
+            const SizedBox(height: 12),
+            BigButton(
+              label: 'Test AI',
+              icon: Icons.smart_toy_rounded,
+              onTap: _testAi,
+            ),
             const SizedBox(height: 32),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _aiReadout() {
+    final bool configured = AiService.instance.isConfigured;
+    return BigCard(
+      child: Row(
+        children: [
+          Icon(
+            configured
+                ? Icons.check_circle_rounded
+                : Icons.info_outline_rounded,
+            color: configured ? AppColors.success : AppColors.gentleWarning,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              configured
+                  ? 'API key detected in .env. Tap "Test AI" to try a live call.'
+                  : 'No API key in .env yet — paste one and hot-restart to test.',
+              style: AppText.body().copyWith(fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _testAi() async {
+    final AiDifficultyNote? result =
+        await AiService.instance.suggestDifficultyNote(
+      recentScores: const <double>[0.9, 0.85, 0.8, 0.6, 0.5],
+      game: 'pattern',
+      currentLevel: 2,
+    );
+    if (!mounted) return;
+    final String msg = result == null
+        ? 'AI returned null (no key, offline, web CORS, or error) — the app '
+            'falls back to the on-device rule.'
+        : '{"suggestedLevel": ${result.suggestedLevel}, "note": '
+            '"${result.note}"}';
+    debugPrint('Test AI -> $msg');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), duration: const Duration(seconds: 8)),
     );
   }
 

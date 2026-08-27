@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'app.dart';
 import 'core/services/local_db.dart';
@@ -21,6 +22,10 @@ Future<void> main() async {
     cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
   await LocalDb.init();
+  // Optional AI keys (Tier 2); missing .env is fine.
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (_) {}
   // Fire-and-forget: background offline-first sync, never blocks startup.
   SyncService.instance.init();
 

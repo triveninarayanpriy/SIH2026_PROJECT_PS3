@@ -1,8 +1,8 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 import '../models/game_result.dart';
+import '../services/ai_service.dart';
 import '../services/local_db.dart';
-import 'ai_service.dart';
 
 /// Result of a Tier-2 refinement: a difficulty and where it came from.
 class DifficultySuggestion {
@@ -93,19 +93,26 @@ class DifficultyEngine {
             difficulty: _clamp(ruleDifficulty), source: 'tier1');
       }
 
+      // Newest-first internally; send oldest-first for a readable trend.
       final List<double> recent = _recent(game, patientId)
           .take(5)
           .map((r) => r.accuracy)
+          .toList()
+          .reversed
           .toList();
-      final AiDifficultyResult ai = await AiService.instance.suggestDifficulty(
+      final AiDifficultyNote? ai = await AiService.instance.suggestDifficultyNote(
+        recentScores: recent,
         game: game,
-        current: ruleDifficulty,
-        recentAccuracies: recent,
+        currentLevel: ruleDifficulty,
       );
+      if (ai == null) {
+        return DifficultySuggestion(
+            difficulty: _clamp(ruleDifficulty), source: 'tier1');
+      }
 
       int chosen = ruleDifficulty;
-      if ((ai.difficulty - ruleDifficulty).abs() == 1) {
-        chosen = ai.difficulty; // prefer AI when it disagrees by one level
+      if ((ai.suggestedLevel - ruleDifficulty).abs() == 1) {
+        chosen = ai.suggestedLevel; // prefer AI when it disagrees by one level
       }
       return DifficultySuggestion(
         difficulty: _clamp(chosen),
