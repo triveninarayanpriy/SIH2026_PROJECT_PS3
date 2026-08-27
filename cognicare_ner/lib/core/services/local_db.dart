@@ -204,4 +204,13 @@ class LocalDb {
       _appState.put(kActiveRole, role);
 
   static Future<void> clearActiveRole() => _appState.delete(kActiveRole);
+
+  static const String _difficultyKeyPrefix = 'difficulty_';
+
+  /// Stored adaptive difficulty for a game (1..5), or [fallback] if unset.
+  static int gameDifficulty(String game, {int fallback = 2}) =>
+      (_appState.get('$_difficultyKeyPrefix$game') as int?) ?? fallback;
+
+  static Future<void> setGameDifficulty(String game, int value) =>
+      _appState.put('$_difficultyKeyPrefix$game', value);
 }

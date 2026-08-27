@@ -190,9 +190,44 @@ class _ThemePreviewScreenState extends State<ThemePreviewScreen> {
               icon: Icons.sync_rounded,
               onTap: _syncNow,
             ),
+            _gap(),
+            _section('Adaptive difficulty (stored)'),
+            _difficultyReadout(),
             const SizedBox(height: 32),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _difficultyReadout() {
+    const Map<String, String> games = <String, String>{
+      'pattern': 'Pattern',
+      'faces': 'Faces',
+      'voice': 'Voice',
+    };
+    return BigCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final MapEntry<String, String> e in games.entries) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(e.value, style: AppText.body()),
+                Text(
+                  'Level ${LocalDb.gameDifficulty(e.key)} / 5',
+                  style: AppText.body(color: AppColors.primary),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
+          Text(
+            'Adapts after each session (Tier 1 rule).',
+            style: AppText.body(color: AppColors.textMuted).copyWith(fontSize: 15),
+          ),
+        ],
       ),
     );
   }

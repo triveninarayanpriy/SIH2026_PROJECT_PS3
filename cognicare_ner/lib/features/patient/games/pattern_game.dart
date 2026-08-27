@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/ai/difficulty_engine.dart';
 import '../../../core/theme/app_colors.dart';
 import 'game_models.dart';
 import 'game_shell.dart';
@@ -99,28 +100,42 @@ List<GameRound> buildPatternRounds({
   return out;
 }
 
-/// Launches the pattern game: builds the rounds once, then runs [GameShell].
+/// Launches the pattern game: resolves the adaptive difficulty, builds the
+/// rounds once, then runs [GameShell].
 class PatternGame extends StatefulWidget {
-  const PatternGame({super.key, required this.patientId, this.difficulty = 2});
+  const PatternGame({super.key, required this.patientId, this.difficulty});
 
   final String patientId;
-  final int difficulty;
+
+  /// Explicit difficulty (for tests/preview); null → adaptive from history.
+  final int? difficulty;
 
   @override
   State<PatternGame> createState() => _PatternGameState();
 }
 
 class _PatternGameState extends State<PatternGame> {
-  late final List<GameRound> _rounds =
-      buildPatternRounds(difficulty: widget.difficulty);
+  static const String _game = 'pattern';
+
+  int _difficulty = DifficultyEngine.defaultDifficulty;
+  List<GameRound> _rounds = const <GameRound>[];
+
+  @override
+  void initState() {
+    super.initState();
+    _difficulty = widget.difficulty ??
+        DifficultyEngine.instance
+            .startingDifficulty(game: _game, patientId: widget.patientId);
+    _rounds = buildPatternRounds(difficulty: _difficulty);
+  }
 
   @override
   Widget build(BuildContext context) {
     return GameShell(
       title: 'What comes next?',
-      game: 'pattern',
+      game: _game,
       domain: 'attention',
-      difficulty: widget.difficulty,
+      difficulty: _difficulty,
       rounds: _rounds,
       patientId: widget.patientId,
     );

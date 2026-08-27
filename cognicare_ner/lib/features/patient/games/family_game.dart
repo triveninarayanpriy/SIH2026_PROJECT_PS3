@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/ai/difficulty_engine.dart';
 import '../../../core/theme/app_text.dart';
 import 'family.dart';
 import 'game_models.dart';
@@ -13,18 +14,37 @@ import 'game_shell.dart';
 /// from the labelled family faces. Falls back to a friendly card when fewer
 /// than two labelled faces exist.
 class FamilyGame extends StatefulWidget {
-  const FamilyGame({super.key, required this.patientId, this.difficulty = 2});
+  const FamilyGame({super.key, required this.patientId, this.difficulty});
 
   final String patientId;
-  final int difficulty;
+
+  /// Explicit difficulty (for tests/preview); null → adaptive from history.
+  final int? difficulty;
 
   @override
   State<FamilyGame> createState() => _FamilyGameState();
 }
 
 class _FamilyGameState extends State<FamilyGame> {
+  static const String _game = 'faces';
+
   late final List<FamilyMember> _faces =
       collectFamily().where((m) => m.hasFace).toList();
+
+  int _difficulty = DifficultyEngine.defaultDifficulty;
+  List<GameRound> _rounds = const <GameRound>[];
+
+  @override
+  void initState() {
+    super.initState();
+    // Only resolve/persist difficulty when there's actually a session to play.
+    if (_faces.length >= 2) {
+      _difficulty = widget.difficulty ??
+          DifficultyEngine.instance
+              .startingDifficulty(game: _game, patientId: widget.patientId);
+      _rounds = _buildRounds();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,10 +56,10 @@ class _FamilyGameState extends State<FamilyGame> {
     }
     return GameShell(
       title: 'Who is this?',
-      game: 'faces',
+      game: _game,
       domain: 'memory',
-      difficulty: widget.difficulty,
-      rounds: _buildRounds(),
+      difficulty: _difficulty,
+      rounds: _rounds,
       patientId: widget.patientId,
     );
   }
@@ -49,7 +69,7 @@ class _FamilyGameState extends State<FamilyGame> {
     // difficulty scales the number of options (2..4), capped by how many faces
     // exist — more options = harder recall.
     final int options =
-        min(_faces.length, max(2, min(4, widget.difficulty + 1)));
+        min(_faces.length, max(2, min(4, _difficulty + 1)));
 
     final List<GameRound> rounds = <GameRound>[];
     for (int i = 0; i < 5; i++) {
