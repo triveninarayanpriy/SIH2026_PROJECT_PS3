@@ -24,7 +24,11 @@ class DemoSeeder {
   /// Seeds when the build was launched with `--dart-define=DEMO=true`.
   static Future<void> maybeLoadFromEnvironment() async {
     if (const bool.fromEnvironment('DEMO')) {
-      await load();
+      try {
+        await load();
+      } catch (_) {
+        // A demo-seed hiccup must never block app startup.
+      }
     }
   }
 

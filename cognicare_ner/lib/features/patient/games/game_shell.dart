@@ -203,10 +203,13 @@ class _GameShellState extends State<GameShell> {
       at: DateTime.now(),
     );
     // Write-through: local first (+ enqueue for cloud). Never blocks the UI.
-    await SyncService.instance.saveGameResult(result);
-    // Check each domain for a cognitive drop (caregiver/doctor only — the
-    // patient is never alarmed). Runs on the just-updated local history.
-    await AnomalyDetector.instance.runForPatient(widget.patientId);
+    // Guarded so a save/detector hiccup never blocks the reward screen.
+    try {
+      await SyncService.instance.saveGameResult(result);
+      // Check each domain for a cognitive drop (caregiver/doctor only — the
+      // patient is never alarmed). Runs on the just-updated local history.
+      await AnomalyDetector.instance.runForPatient(widget.patientId);
+    } catch (_) {}
     if (!mounted) return;
     setState(() => _finished = true);
   }

@@ -67,7 +67,9 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
   }
 
   Future<void> _loadDemo() async {
-    await DemoSeeder.load();
+    try {
+      await DemoSeeder.load();
+    } catch (_) {}
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Demo data loaded')),

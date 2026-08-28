@@ -43,23 +43,32 @@ class PatientHome extends StatelessWidget {
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppTheme.screenPadding),
-          child: ValueListenableBuilder<Box<PatientProfile>>(
-            valueListenable: LocalDb.profileBox.listenable(),
-            builder: (context, _, _) {
-              final PatientProfile? profile = LocalDb.getProfile(patientId);
-              final AppLocalizations t = AppLocalizations.of(context);
-              if (profile != null) {
-                // Patient locale follows their first chosen language.
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  LocaleController.setFromLanguages(profile.languages);
-                });
-              }
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+        child: ValueListenableBuilder<Box<PatientProfile>>(
+          valueListenable: LocalDb.profileBox.listenable(),
+          builder: (context, _, _) {
+            final PatientProfile? profile = LocalDb.getProfile(patientId);
+            final AppLocalizations t = AppLocalizations.of(context);
+            if (profile != null) {
+              // Patient locale follows their first chosen language.
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                LocaleController.setFromLanguages(profile.languages);
+              });
+            }
+            // Centered, but a safety-net scroll so a short screen never shows a
+            // red overflow error during the demo (patient screens don't scroll
+            // in normal use).
+            return LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                padding: const EdgeInsets.all(AppTheme.screenPadding),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight:
+                        constraints.maxHeight - AppTheme.screenPadding * 2,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
                   Icon(
                     profile == null
                         ? Icons.hourglass_top_rounded
@@ -122,10 +131,12 @@ class PatientHome extends StatelessWidget {
                       onTap: () => _open(context, const CalmModeScreen()),
                     ),
                   ],
-                ],
-              );
-            },
-          ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
