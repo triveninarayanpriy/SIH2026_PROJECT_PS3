@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'app.dart';
+import 'core/services/demo_seeder.dart';
 import 'core/services/local_db.dart';
 import 'core/services/sync_service.dart';
 import 'firebase_options.dart';
@@ -29,6 +30,7 @@ Future<void> main() async {
   // Fire-and-forget: background offline-first sync, never blocks startup.
   // Pass the managed patient so a returning device re-pulls fresh cloud data.
   SyncService.instance.init(patientId: LocalDb.caregiverPatientId());
+  await DemoSeeder.maybeLoadFromEnvironment();
 
   const String role = String.fromEnvironment('ROLE', defaultValue: 'caregiver');
   runApp(const CogniCareApp(role: role));

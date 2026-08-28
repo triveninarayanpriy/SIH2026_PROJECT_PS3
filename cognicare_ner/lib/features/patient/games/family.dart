@@ -85,10 +85,12 @@ class FamilyPhoto extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String? s = src;
-    if (s != null && s.startsWith('http')) {
+    if (s != null && (s.startsWith('http') || s.startsWith('assets/'))) {
+      final ImageProvider provider =
+          s.startsWith('http') ? NetworkImage(s) : AssetImage(s);
       return ClipOval(
-        child: Image.network(
-          s,
+        child: Image(
+          image: provider,
           width: size,
           height: size,
           fit: BoxFit.cover,

@@ -28,7 +28,9 @@ class _AudioPlayButtonState extends State<AudioPlayButton> {
 
   Future<void> _play() async {
     try {
-      if (widget.src.startsWith('http')) {
+      if (widget.src.startsWith('assets/')) {
+        await _player.setAsset(widget.src);
+      } else if (widget.src.startsWith('http')) {
         await _player.setUrl(widget.src);
       } else {
         await _player.setFilePath(widget.src);

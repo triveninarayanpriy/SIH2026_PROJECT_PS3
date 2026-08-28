@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'app.dart';
+import 'core/services/demo_seeder.dart';
 import 'core/services/local_db.dart';
 import 'core/services/sync_service.dart';
 import 'firebase_options.dart';
@@ -33,6 +34,8 @@ void main() async {
   SyncService.instance.init(
     patientId: LocalDb.linkedPatientId() ?? LocalDb.caregiverPatientId(),
   );
+  // Debug-only: seed a fully-populated demo patient when DEMO=true.
+  await DemoSeeder.maybeLoadFromEnvironment();
 
   runApp(const CogniCareApp(role: '', roleSwitching: true));
 }

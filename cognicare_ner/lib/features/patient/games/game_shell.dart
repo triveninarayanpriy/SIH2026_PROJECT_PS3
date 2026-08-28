@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/ai/anomaly_detector.dart';
@@ -55,6 +56,7 @@ class GameShell extends StatefulWidget {
 
 class _GameShellState extends State<GameShell> {
   final Uuid _uuid = const Uuid();
+  final AudioPlayer _chime = AudioPlayer();
 
   // Frustration protocol: 3 wrong in a row, or this much idle time, gently
   // switches to Calm mode.
@@ -85,7 +87,18 @@ class _GameShellState extends State<GameShell> {
   @override
   void dispose() {
     _idleTimer?.cancel();
+    _chime.dispose();
     super.dispose();
+  }
+
+  Future<void> _playChime(String asset) async {
+    try {
+      await _chime.setAsset(asset);
+      await _chime.seek(Duration.zero);
+      _chime.play();
+    } catch (_) {
+      // Chime asset missing/unsupported — ignore.
+    }
   }
 
   /// Restart the idle countdown after any interaction / new round.
@@ -145,6 +158,7 @@ class _GameShellState extends State<GameShell> {
     if (isCorrect) {
       _wrongStreak = 0;
       _locked = true;
+      _playChime('assets/sounds/correct.wav');
       GentleFeedback.correct(context);
       TtsService.instance.play(t.veryGood);
       await Future<void>.delayed(const Duration(milliseconds: 1200));
@@ -152,6 +166,7 @@ class _GameShellState extends State<GameShell> {
       _advance();
     } else {
       _wrongStreak++;
+      _playChime('assets/sounds/tryagain.wav');
       GentleFeedback.tryAgain(context);
       TtsService.instance.play(t.letsTryAgain);
       if (_wrongStreak >= 3) {

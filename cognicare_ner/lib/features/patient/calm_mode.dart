@@ -54,7 +54,9 @@ class _CalmModeScreenState extends State<CalmModeScreen> {
     final String? music = _firstMusic();
     if (music != null) {
       try {
-        if (music.startsWith('http')) {
+        if (music.startsWith('assets/')) {
+          await _music.setAsset(music);
+        } else if (music.startsWith('http')) {
           await _music.setUrl(music);
         } else {
           await _music.setFilePath(music);
@@ -91,7 +93,9 @@ class _CalmModeScreenState extends State<CalmModeScreen> {
       ...LocalDb.mediaByType('familyFace'),
       ...LocalDb.mediaByType('photo'),
     ]) {
-      if (m.url.startsWith('http')) out.add(m.url);
+      if (m.url.startsWith('http') || m.url.startsWith('assets/')) {
+        out.add(m.url);
+      }
     }
     return out;
   }
@@ -162,13 +166,16 @@ class _CalmModeScreenState extends State<CalmModeScreen> {
         ],
       );
     }
+    final String s = _photos[_index];
+    final ImageProvider provider =
+        s.startsWith('http') ? NetworkImage(s) : AssetImage(s);
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 800),
       child: ClipRRect(
         key: ValueKey<int>(_index),
         borderRadius: BorderRadius.circular(28),
-        child: Image.network(
-          _photos[_index],
+        child: Image(
+          image: provider,
           width: 320,
           height: 320,
           fit: BoxFit.cover,

@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
+import '../services/demo_seeder.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text.dart';
 import '../theme/app_theme.dart';
@@ -65,6 +66,14 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
     }
   }
 
+  Future<void> _loadDemo() async {
+    await DemoSeeder.load();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Demo data loaded')),
+    );
+  }
+
   String _friendly(FirebaseAuthException e) {
     switch (e.code) {
       case 'invalid-email':
@@ -89,7 +98,13 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
+      appBar: AppBar(
+        // Hidden debug gesture: long-press the title to load demo data.
+        title: GestureDetector(
+          onLongPress: _loadDemo,
+          child: Text(widget.title),
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppTheme.screenPadding),
         child: Column(
