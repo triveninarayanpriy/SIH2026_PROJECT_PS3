@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../../core/ai/difficulty_engine.dart';
+import '../../../core/services/local_db.dart';
 import '../../../core/theme/app_text.dart';
 import 'audio_play_button.dart';
 import 'family.dart';
@@ -29,8 +30,8 @@ class VoiceGame extends StatefulWidget {
 class _VoiceGameState extends State<VoiceGame> {
   static const String _game = 'voice';
 
-  late final List<FamilyMember> _members =
-      collectFamily().where((m) => m.hasFace && m.voice != null).toList();
+  late final List<FamilyMember> _allMembers = collectFamily();
+  late final List<FamilyMember> _targets = _allMembers.where((m) => m.voice != null).toList();
 
   int _difficulty = DifficultyEngine.defaultDifficulty;
   List<GameRound> _rounds = const <GameRound>[];
@@ -38,7 +39,7 @@ class _VoiceGameState extends State<VoiceGame> {
   @override
   void initState() {
     super.initState();
-    if (_members.length >= 2) {
+    if (_targets.isNotEmpty && _allMembers.length >= 2) {
       _difficulty = widget.difficulty ??
           DifficultyEngine.instance
               .startingDifficulty(game: _game, patientId: widget.patientId);
@@ -48,7 +49,7 @@ class _VoiceGameState extends State<VoiceGame> {
 
   @override
   Widget build(BuildContext context) {
-    if (_members.length < 2) {
+    if (_targets.isEmpty || _allMembers.length < 2) {
       return const AddMoreCard(
         title: 'Whose voice is this?',
         message: 'Ask your family to add photos and voice recordings.',
@@ -66,14 +67,14 @@ class _VoiceGameState extends State<VoiceGame> {
 
   List<GameRound> _buildRounds() {
     final Random rng = Random();
-    final int options =
-        min(_members.length, max(2, min(4, _difficulty + 1)));
+    final int options = min(_allMembers.length, max(2, min(4, _difficulty + 1)));
+
+    final int roundCount = LocalDb.getSetting('gameConfig_voice_rounds') as int? ?? 5;
 
     final List<GameRound> rounds = <GameRound>[];
-    for (int i = 0; i < 5; i++) {
-      final FamilyMember target = _members[rng.nextInt(_members.length)];
-      final List<FamilyMember> others =
-          _members.where((m) => m.name != target.name).toList()..shuffle(rng);
+    for (int i = 0; i < roundCount; i++) {
+      final FamilyMember target = _targets[rng.nextInt(_targets.length)];
+      final List<FamilyMember> others = _allMembers.where((m) => m.name != target.name).toList()..shuffle(rng);
       final List<FamilyMember> picks = <FamilyMember>[
         target,
         ...others.take(options - 1),
@@ -81,6 +82,7 @@ class _VoiceGameState extends State<VoiceGame> {
 
       rounds.add(GameRound(
         prompt: 'Whose voice is this?',
+        promptAudioPath: LocalDb.mediaByType('game_prompt_voice').firstOrNull?.localPath,
         stimulus: AudioPlayButton(src: target.voice!),
         answerId: target.name,
         choices: [
@@ -108,3 +110,7 @@ class _VoiceGameState extends State<VoiceGame> {
     return rounds;
   }
 }
+
+
+
+

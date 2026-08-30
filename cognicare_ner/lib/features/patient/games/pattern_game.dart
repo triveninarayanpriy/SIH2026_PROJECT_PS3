@@ -3,23 +3,23 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../../core/ai/difficulty_engine.dart';
+import '../../../core/services/local_db.dart';
 import '../../../core/theme/app_colors.dart';
 import 'game_models.dart';
 import 'game_shell.dart';
 import 'game_tile.dart';
 
-/// Everyday items used by the pattern game — clear icons + plain labels.
+/// Geometric shapes and colors often used in clinical cognitive assessments (e.g. MoCA, MMSE).
 const List<GameItem> kPatternItems = <GameItem>[
-  GameItem(id: 'cup', label: 'Cup', icon: Icons.local_cafe_rounded),
-  GameItem(id: 'glass', label: 'Glass', icon: Icons.local_drink_rounded),
-  GameItem(id: 'ball', label: 'Ball', icon: Icons.sports_soccer_rounded),
-  GameItem(id: 'star', label: 'Star', icon: Icons.star_rounded),
-  GameItem(id: 'flower', label: 'Flower', icon: Icons.local_florist_rounded),
-  GameItem(id: 'sun', label: 'Sun', icon: Icons.wb_sunny_rounded),
-  GameItem(id: 'heart', label: 'Heart', icon: Icons.favorite_rounded),
-  GameItem(id: 'house', label: 'House', icon: Icons.home_rounded),
-  GameItem(id: 'car', label: 'Car', icon: Icons.directions_car_rounded),
-  GameItem(id: 'cake', label: 'Cake', icon: Icons.cake_rounded),
+  GameItem(id: 'blue_square', label: 'Blue Square', icon: Icons.square_rounded, color: Colors.blue),
+  GameItem(id: 'red_circle', label: 'Red Circle', icon: Icons.circle, color: Colors.red),
+  GameItem(id: 'green_triangle', label: 'Green Triangle', icon: Icons.change_history_rounded, color: Colors.green),
+  GameItem(id: 'orange_star', label: 'Orange Star', icon: Icons.star_rounded, color: Colors.orange),
+  GameItem(id: 'purple_diamond', label: 'Purple Diamond', icon: Icons.diamond_rounded, color: Colors.purple),
+  GameItem(id: 'teal_hexagon', label: 'Teal Hexagon', icon: Icons.hexagon_rounded, color: Colors.teal),
+  GameItem(id: 'yellow_circle', label: 'Yellow Circle', icon: Icons.circle, color: Colors.amber),
+  GameItem(id: 'pink_square', label: 'Pink Square', icon: Icons.square_rounded, color: Colors.pink),
+  GameItem(id: 'brown_triangle', label: 'Brown Triangle', icon: Icons.change_history_rounded, color: Colors.brown),
 ];
 
 /// Builds [rounds] pattern-recognition rounds, scaled by [difficulty]:
@@ -84,6 +84,7 @@ List<GameRound> buildPatternRounds({
 
     out.add(GameRound(
       prompt: 'What comes next?',
+      promptAudioPath: LocalDb.mediaByType('game_prompt_pattern').firstOrNull?.localPath,
       stimulus: stimulus,
       answerId: correct.id,
       choices: [
@@ -120,18 +121,37 @@ class _PatternGameState extends State<PatternGame> {
 
   int _difficulty = DifficultyEngine.defaultDifficulty;
   List<GameRound> _rounds = const <GameRound>[];
+  int _roundCount = 5;
+  bool _enabled = true;
 
   @override
   void initState() {
     super.initState();
+    _roundCount = LocalDb.getSetting('gameConfig_pattern_rounds') as int? ?? 5;
+    _enabled = LocalDb.getSetting('gameConfig_pattern_enabled') as bool? ?? true;
     _difficulty = widget.difficulty ??
         DifficultyEngine.instance
             .startingDifficulty(game: _game, patientId: widget.patientId);
-    _rounds = buildPatternRounds(difficulty: _difficulty);
+    _rounds = buildPatternRounds(difficulty: _difficulty, rounds: _roundCount);
   }
 
   @override
   Widget build(BuildContext context) {
+    if (!_enabled) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('What comes next?')),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(20.0),
+            child: Text(
+              'This game is currently turned off by your caregiver.',
+              style: TextStyle(fontSize: 24),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      );
+    }
     return GameShell(
       title: 'What comes next?',
       game: _game,
@@ -142,3 +162,4 @@ class _PatternGameState extends State<PatternGame> {
     );
   }
 }
+

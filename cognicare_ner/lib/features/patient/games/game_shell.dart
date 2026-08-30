@@ -72,6 +72,7 @@ class _GameShellState extends State<GameShell> {
   bool _leaving = false; // switching to Calm mode
   bool _listening = false; // optional voice-answer state
   Timer? _idleTimer;
+  Timer? _listenTimer;
   late final DateTime _start;
 
   int get _total => widget.rounds.length;
@@ -87,6 +88,7 @@ class _GameShellState extends State<GameShell> {
   @override
   void dispose() {
     _idleTimer?.cancel();
+    _listenTimer?.cancel();
     _chime.dispose();
     super.dispose();
   }
@@ -95,7 +97,7 @@ class _GameShellState extends State<GameShell> {
     try {
       await _chime.setAsset(asset);
       await _chime.seek(Duration.zero);
-      _chime.play();
+      await _chime.play();
     } catch (_) {
       // Chime asset missing/unsupported — ignore.
     }
@@ -138,8 +140,11 @@ class _GameShellState extends State<GameShell> {
     if (_spokenIndex == _index || _finished) return;
     _spokenIndex = _index;
     final String? audioPath = _round.promptAudioPath;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      TtsService.instance.play(prompt, audioPath: audioPath);
+    Future<void>.microtask(() async {
+      await TtsService.instance.play(prompt, audioPath: audioPath);
+      if (mounted && !_finished && !_locked) {
+        _listen();
+      }
     });
   }
 
@@ -155,23 +160,33 @@ class _GameShellState extends State<GameShell> {
       if (isCorrect) _correct++;
     }
 
+    // Stop listening before feedback
+    _listenTimer?.cancel();
+    setState(() => _listening = false);
+    await SttService.instance.stop();
+
     if (isCorrect) {
       _wrongStreak = 0;
       _locked = true;
-      _playChime('assets/sounds/correct.wav');
+      await _playChime('assets/sounds/correct.wav');
+      if (!mounted) return;
       GentleFeedback.correct(context);
-      TtsService.instance.play(t.veryGood);
-      await Future<void>.delayed(const Duration(milliseconds: 1200));
+      await TtsService.instance.play(t.veryGood, audioPath: LocalDb.mediaByType('game_prompt_correct').firstOrNull?.localPath);
       if (!mounted) return;
       _advance();
     } else {
       _wrongStreak++;
-      _playChime('assets/sounds/tryagain.wav');
+      _locked = true;
+      await _playChime('assets/sounds/tryagain.wav');
+      if (!mounted) return;
       GentleFeedback.tryAgain(context);
-      TtsService.instance.play(t.letsTryAgain);
+      await TtsService.instance.play(t.letsTryAgain, audioPath: LocalDb.mediaByType('game_prompt_wrong').firstOrNull?.localPath);
+      if (!mounted) return;
       if (_wrongStreak >= 3) {
-        // Show the gentle feedback, then switch to Calm mode.
-        Future<void>.delayed(const Duration(milliseconds: 1200), _toCalm);
+        _toCalm();
+      } else {
+        setState(() => _locked = false);
+        _listen(); // restart listening after feedback finishes
       }
     }
   }
@@ -191,6 +206,7 @@ class _GameShellState extends State<GameShell> {
 
   Future<void> _finish() async {
     _idleTimer?.cancel();
+    _listenTimer?.cancel();
     final GameResult result = GameResult(
       id: _uuid.v4(),
       patientId: widget.patientId,
@@ -277,12 +293,19 @@ class _GameShellState extends State<GameShell> {
       return;
     }
     setState(() => _listening = true);
-    // Safety reset if nothing is recognized.
-    Future<void>.delayed(const Duration(seconds: 8), () {
-      if (mounted && _listening) setState(() => _listening = false);
+    // Restart listening if nothing is recognized before the timeout.
+    // This allows it to continuously listen until a right/wrong answer is heard.
+    _listenTimer?.cancel();
+    _listenTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted && _listening) {
+        setState(() => _listening = false);
+        _listen(); // Restart listening
+      }
     });
     await SttService.instance.listen(
+      listenFor: const Duration(seconds: 5),
       onResult: (String text) {
+        _listenTimer?.cancel();
         if (!mounted) return;
         setState(() => _listening = false);
         _matchSpoken(text);
@@ -290,21 +313,33 @@ class _GameShellState extends State<GameShell> {
     );
   }
 
-  void _matchSpoken(String spoken) {
+  void _matchSpoken(String spoken) async {
     final String s = spoken.trim().toLowerCase();
     if (s.isEmpty) {
-      _hint("I didn't catch that — you can tap the pictures.");
+      _locked = true;
+      _hint("I didn't catch that — try again.");
+      await TtsService.instance.play(AppLocalizations.of(context).letsTryAgain, audioPath: LocalDb.mediaByType('game_prompt_wrong').firstOrNull?.localPath);
+      if (mounted && !_leaving) {
+        setState(() => _locked = false);
+        _listen();
+      }
       return;
     }
     for (final GameChoice c in _round.choices) {
       final String? label = c.label?.trim().toLowerCase();
       if (label == null || label.isEmpty) continue;
       if (s == label || s.contains(label) || label.contains(s)) {
-        _answer(c.id);
+        await _answer(c.id);
         return;
       }
     }
-    _hint("I didn't catch that — you can tap the pictures.");
+    _locked = true;
+    _hint("That wasn't right, try again.");
+    await TtsService.instance.play(AppLocalizations.of(context).letsTryAgain, audioPath: LocalDb.mediaByType('game_prompt_wrong').firstOrNull?.localPath);
+    if (mounted && !_leaving) {
+      setState(() => _locked = false);
+      _listen();
+    }
   }
 
   void _hint(String message) {
@@ -454,3 +489,6 @@ class _RewardView extends StatelessWidget {
     );
   }
 }
+
+
+

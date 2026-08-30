@@ -39,13 +39,16 @@ class AppTheme {
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.text,
-        elevation: 0,
+        elevation: 0.5,
+        shadowColor: AppColors.shadow,
         centerTitle: true,
         titleTextStyle: AppText.title(),
+        shape: const Border(bottom: BorderSide(color: AppColors.border, width: 1)),
       ),
       cardTheme: CardThemeData(
         color: AppColors.surface,
-        elevation: 0,
+        elevation: 2,
+        shadowColor: AppColors.shadowDark,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(cardRadius),
@@ -56,7 +59,7 @@ class AppTheme {
           minimumSize: const Size(minTapTarget, minTapTarget),
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
-          elevation: 0,
+          elevation: 2,
           padding: const EdgeInsets.symmetric(
             horizontal: screenPadding,
             vertical: 18,
@@ -66,6 +69,52 @@ class AppTheme {
           ),
           textStyle: AppText.button(),
         ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.background,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(cardRadius),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(cardRadius),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(cardRadius),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+        ),
+        contentPadding: const EdgeInsets.all(16),
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(cardRadius),
+        ),
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: AppColors.surface,
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: AppColors.textMuted,
+        elevation: 8,
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(cardRadius),
+        ),
+        backgroundColor: AppColors.text,
+        contentTextStyle: AppText.body(color: Colors.white),
+      ),
+      dialogTheme: DialogThemeData(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(cardRadius),
+        ),
+        elevation: 8,
+        backgroundColor: AppColors.surface,
       ),
       materialTapTargetSize: MaterialTapTargetSize.padded,
     );

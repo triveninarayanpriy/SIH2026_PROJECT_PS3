@@ -79,7 +79,7 @@ class GameItemContent extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(item.icon, size: iconSize, color: AppColors.text),
+        Icon(item.icon, size: iconSize, color: item.color ?? AppColors.text),
         const SizedBox(height: 8),
         Text(
           item.label,

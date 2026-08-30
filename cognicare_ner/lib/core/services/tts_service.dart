@@ -56,8 +56,8 @@ class TtsService {
         await _player.setFilePath(src);
       }
       await _player.seek(Duration.zero);
-      // Don't await completion — playback runs for a few seconds.
-      _player.play();
+      // Await completion so callers know when audio playback has finished.
+      await _player.play();
     } catch (_) {
       // Missing/unsupported clip — silent rather than crash.
     }
@@ -110,3 +110,4 @@ class TtsService {
     } catch (_) {}
   }
 }
+

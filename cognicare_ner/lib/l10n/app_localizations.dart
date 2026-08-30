@@ -10,7 +10,11 @@ import 'app_localizations_bn.dart';
 import 'app_localizations_brx.dart';
 import 'app_localizations_en.dart';
 import 'app_localizations_hi.dart';
+import 'app_localizations_kha.dart';
+import 'app_localizations_lus.dart';
 import 'app_localizations_mni.dart';
+import 'app_localizations_nag.dart';
+import 'app_localizations_ne.dart';
 
 // ignore_for_file: type=lint
 
@@ -103,7 +107,11 @@ abstract class AppLocalizations {
     Locale('brx'),
     Locale('en'),
     Locale('hi'),
+    Locale('kha'),
+    Locale('lus'),
     Locale('mni'),
+    Locale('nag'),
+    Locale('ne'),
   ];
 
   /// Pattern game question
@@ -213,7 +221,11 @@ class _AppLocalizationsDelegate
     'brx',
     'en',
     'hi',
+    'kha',
+    'lus',
     'mni',
+    'nag',
+    'ne',
   ].contains(locale.languageCode);
 
   @override
@@ -233,8 +245,16 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
       return AppLocalizationsEn();
     case 'hi':
       return AppLocalizationsHi();
+    case 'kha':
+      return AppLocalizationsKha();
+    case 'lus':
+      return AppLocalizationsLus();
     case 'mni':
       return AppLocalizationsMni();
+    case 'nag':
+      return AppLocalizationsNag();
+    case 'ne':
+      return AppLocalizationsNe();
   }
 
   throw FlutterError(

@@ -4,11 +4,12 @@ import 'package:flutter/widgets.dart';
 /// and answer tiles. Data-driven so difficulty can scale how many are shown.
 @immutable
 class GameItem {
-  const GameItem({required this.id, required this.label, required this.icon});
+  const GameItem({required this.id, required this.label, required this.icon, this.color});
 
   final String id;
   final String label;
   final IconData icon;
+  final Color? color;
 }
 
 /// One answer option: a stable [id] and the inner [content] shown in its big

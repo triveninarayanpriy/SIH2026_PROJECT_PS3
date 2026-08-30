@@ -4,8 +4,9 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/local_db.dart';
 import '../../core/widgets/loading_view.dart';
-import 'patient_home.dart';
+
 import 'patient_setup_screen.dart';
+import 'welcome_screen.dart';
 
 /// Patient entry flow: ensure anonymous sign-in, then route to the Patient Home
 /// if this device is paired, otherwise to the pairing screen. No login UI.
@@ -70,7 +71,7 @@ class _PatientGateState extends State<PatientGate> {
             // no local profile, so it still shows the pairing screen.
             patientId ??= _autoLinkId();
             if (patientId == null) return const PatientSetupScreen();
-            return PatientHome(patientId: patientId);
+            return WelcomeScreen(patientId: patientId);
           },
         );
       },

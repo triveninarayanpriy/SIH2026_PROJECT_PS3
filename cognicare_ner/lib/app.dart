@@ -42,7 +42,7 @@ class CogniCareApp extends StatelessWidget {
       valueListenable: LocaleController.notifier,
       builder: (context, locale, _) {
         return MaterialApp(
-          title: 'CogniCare NER',
+          title: 'NAWAL',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light(),
           locale: locale,
@@ -111,10 +111,11 @@ class _RoleGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (role == 'caregiver' || role == 'doctor') {
-      // Caregiver / doctor default to English. (Patient locale is set from the
-      // profile in the patient home.)
+      // Caregiver / doctor default to English unless explicitly set. (Patient
+      // locale is set from the profile in the patient home.)
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        LocaleController.setLocale(const Locale('en'));
+        final saved = LocalDb.getSetting('app_locale') as String?;
+        LocaleController.setLocale(saved != null ? Locale(saved) : const Locale('en'));
       });
     }
     switch (role) {
@@ -154,7 +155,7 @@ class _SwitchRoleButton extends StatelessWidget {
               Icon(Icons.swap_horiz_rounded, color: Colors.white, size: 22),
               SizedBox(width: 6),
               Text(
-                'Role',
+                'Switch',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 15,
@@ -175,7 +176,7 @@ class _UnknownRole extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('CogniCare NER')),
+      appBar: AppBar(title: const Text('NAWAL')),
       body: const Padding(
         padding: EdgeInsets.all(AppTheme.screenPadding),
         child: Center(

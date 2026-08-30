@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../../core/ai/difficulty_engine.dart';
+import '../../../core/services/local_db.dart';
 import '../../../core/theme/app_text.dart';
 import 'family.dart';
 import 'game_models.dart';
@@ -71,8 +72,10 @@ class _FamilyGameState extends State<FamilyGame> {
     final int options =
         min(_faces.length, max(2, min(4, _difficulty + 1)));
 
+    final int roundCount = LocalDb.getSetting('gameConfig_faces_rounds') as int? ?? 5;
+
     final List<GameRound> rounds = <GameRound>[];
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < roundCount; i++) {
       final FamilyMember target = _faces[rng.nextInt(_faces.length)];
       final List<FamilyMember> others =
           _faces.where((m) => m.name != target.name).toList()..shuffle(rng);
@@ -83,6 +86,7 @@ class _FamilyGameState extends State<FamilyGame> {
 
       rounds.add(GameRound(
         prompt: 'Who is this?',
+        promptAudioPath: LocalDb.mediaByType('game_prompt_faces').firstOrNull?.localPath,
         // No name on the stimulus placeholder so it never reveals the answer.
         stimulus: FamilyPhoto(src: target.photo, size: 240),
         answerId: target.name,
@@ -103,3 +107,4 @@ class _FamilyGameState extends State<FamilyGame> {
     return rounds;
   }
 }
+

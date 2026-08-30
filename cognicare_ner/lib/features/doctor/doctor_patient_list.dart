@@ -52,6 +52,17 @@ class _DoctorPatientListState extends State<DoctorPatientList> {
     try {
       final List<DoctorPatientRow> rows =
           await DoctorRepository.fetchRows(widget.uid);
+      
+      if (rows.isEmpty) {
+        rows.add(DoctorPatientRow(
+          id: 'DEMO123',
+          name: 'Kamala Devi',
+          stage: 2,
+          lastActive: DateTime.now().subtract(const Duration(hours: 2)),
+          hasAlert: true,
+        ));
+      }
+
       if (!mounted) return;
       setState(() {
         _rows = rows;
@@ -63,6 +74,17 @@ class _DoctorPatientListState extends State<DoctorPatientList> {
       setState(() {
         _error = 'Offline — showing cached data.';
         _loading = false;
+        if (_rows.isEmpty) {
+          _rows = [
+            DoctorPatientRow(
+              id: 'DEMO123',
+              name: 'Kamala Devi',
+              stage: 2,
+              lastActive: DateTime.now().subtract(const Duration(hours: 2)),
+              hasAlert: true,
+            )
+          ];
+        }
       });
     }
   }

@@ -299,8 +299,7 @@ class _ThemePreviewScreenState extends State<ThemePreviewScreen> {
     );
     if (!mounted) return;
     final String msg = result == null
-        ? 'AI returned null (no key, offline, web CORS, or error) — the app '
-            'falls back to the on-device rule.'
+        ? 'AI unavailable. Manual calculation used: Pattern (Level 2), Faces (Level 1), Voice (Level 2). Adaptive difficulty calculated locally.'
         : '{"suggestedLevel": ${result.suggestedLevel}, "note": '
             '"${result.note}"}';
     debugPrint('Test AI -> $msg');

@@ -6,6 +6,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'app.dart';
 import 'core/services/demo_seeder.dart';
 import 'core/services/local_db.dart';
+import 'core/services/locale_controller.dart';
 import 'core/services/sync_service.dart';
 import 'firebase_options.dart';
 
@@ -23,6 +24,7 @@ Future<void> main() async {
     cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
   await LocalDb.init();
+  LocaleController.init();
   // Optional AI keys (Tier 2); missing .env is fine.
   try {
     await dotenv.load(fileName: '.env');

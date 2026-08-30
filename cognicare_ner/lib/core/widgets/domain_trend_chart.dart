@@ -86,39 +86,41 @@ class DomainTrendChart extends StatelessWidget {
         maxX: maxX,
         minY: 0,
         maxY: 1,
-        gridData: const FlGridData(
+        gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
           horizontalInterval: 0.25,
+          getDrawingHorizontalLine: (value) => FlLine(
+            color: AppColors.border.withOpacity(0.5),
+            strokeWidth: 1,
+            dashArray: [4, 4],
+          ),
         ),
         borderData: FlBorderData(show: false),
         titlesData: FlTitlesData(
-          topTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
               interval: 0.5,
               reservedSize: 40,
               getTitlesWidget: (v, _) => Text('${(v * 100).round()}%',
-                  style: AppText.body(color: AppColors.textMuted)
-                      .copyWith(fontSize: 12)),
+                  style: AppText.body(color: AppColors.textMuted).copyWith(fontSize: 12)),
             ),
           ),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              interval: days <= 7 ? 3 : 10,
+              interval: days <= 7 ? 1 : (days / 4).round().toDouble(),
               reservedSize: 28,
               getTitlesWidget: (v, _) {
                 final int daysAgo = (maxX - v).round();
+                if (daysAgo < 0 || daysAgo >= days) return const SizedBox.shrink();
                 return Padding(
                   padding: const EdgeInsets.only(top: 6),
-                  child: Text(daysAgo == 0 ? 'today' : '${daysAgo}d',
-                      style: AppText.body(color: AppColors.textMuted)
-                          .copyWith(fontSize: 12)),
+                  child: Text(daysAgo == 0 ? 'Today' : '${daysAgo}d ago',
+                      style: AppText.body(color: AppColors.textMuted).copyWith(fontSize: 12)),
                 );
               },
             ),
@@ -129,10 +131,24 @@ class DomainTrendChart extends StatelessWidget {
             LineChartBarData(
               spots: _spots(d.domainKey),
               isCurved: true,
+              curveSmoothness: 0.35,
+              preventCurveOverShooting: true,
               color: d.color,
               barWidth: 3,
-              dotData: const FlDotData(show: true),
-              belowBarData: BarAreaData(show: false),
+              isStrokeCapRound: true,
+              dotData: FlDotData(
+                show: days <= 7,
+                getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                  radius: 4,
+                  color: d.color,
+                  strokeWidth: 2,
+                  strokeColor: Colors.white,
+                ),
+              ),
+              belowBarData: BarAreaData(
+                show: true,
+                color: d.color.withOpacity(0.15),
+              ),
             ),
         ],
       ),

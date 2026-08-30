@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../../core/models/media_item.dart';
@@ -52,12 +53,15 @@ List<FamilyMember> collectFamily() {
   for (final MediaItem m in LocalDb.allMedia()) {
     final String? name = m.label;
     if (name == null || name.trim().isEmpty) continue;
+    // CRITICAL FIX: Only parse media types that actually belong to family members
+    if (m.type != 'familyFace' && m.type != 'photo' && m.type != 'familyVoice' && m.type != 'voice') continue;
+
     final _Acc acc = byName.putIfAbsent(name, _Acc.new);
     final String? src = _usableSrc(m);
     if (m.type == 'familyFace' || m.type == 'photo') {
       acc.hasFace = true;
       acc.photo ??= src;
-    } else if (m.type == 'familyVoice' || m.type == 'voice' || m.type == 'music') {
+    } else if (m.type == 'familyVoice' || m.type == 'voice') {
       acc.hasVoice = true;
       acc.voice ??= src;
     }
@@ -85,9 +89,10 @@ class FamilyPhoto extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String? s = src;
-    if (s != null && (s.startsWith('http') || s.startsWith('assets/'))) {
-      final ImageProvider provider =
-          s.startsWith('http') ? NetworkImage(s) : AssetImage(s);
+    if (s != null && s.isNotEmpty) {
+      final ImageProvider provider = s.startsWith('http') 
+          ? NetworkImage(s) as ImageProvider
+          : (s.startsWith('assets/') ? AssetImage(s) as ImageProvider : FileImage(File(s)) as ImageProvider);
       return ClipOval(
         child: Image(
           image: provider,

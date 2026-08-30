@@ -36,8 +36,17 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
   final AuthService _auth = AuthService();
   final TextEditingController _name = TextEditingController();
   final TextEditingController _age = TextEditingController();
-  final TextEditingController _languages = TextEditingController(text: 'English');
-  final TextEditingController _region = TextEditingController();
+  final TextEditingController _clinicalNotes = TextEditingController();
+  
+  String _selectedLanguage = 'English';
+  final List<String> _languages = [
+    'Assamese', 'Bengali', 'Bodo', 'English', 'Hindi', 'Khasi', 'Manipuri/Meitei', 'Mizo', 'Nagamese'
+  ];
+
+  String _selectedRegion = 'Assam';
+  final List<String> _regions = [
+    'Arunachal Pradesh', 'Assam', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Sikkim', 'Tripura'
+  ];
 
   int _stage = 1;
   bool _busy = false;
@@ -48,8 +57,7 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
   void dispose() {
     _name.dispose();
     _age.dispose();
-    _languages.dispose();
-    _region.dispose();
+    _clinicalNotes.dispose();
     super.dispose();
   }
 
@@ -70,12 +78,9 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
       name: name,
       age: int.tryParse(_age.text.trim()) ?? 0,
       stage: _stage,
-      languages: _languages.text
-          .split(',')
-          .map((s) => s.trim())
-          .where((s) => s.isNotEmpty)
-          .toList(),
-      region: _region.text.trim(),
+      languages: [_selectedLanguage],
+      region: _selectedRegion,
+      clinicalNotes: _clinicalNotes.text.trim(),
       createdAt: DateTime.now(),
     );
 
@@ -108,7 +113,16 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
   Widget build(BuildContext context) {
     final String? code = _createdId;
     return Scaffold(
-      appBar: AppBar(title: Text(code == null ? 'Add patient' : 'Patient added')),
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Text(
+          code == null ? 'Add Patient Profile' : 'Profile Created',
+          style: AppText.title(color: AppColors.primary),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.primary),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppTheme.screenPadding),
         child: code == null ? _form() : _codeView(code),
@@ -117,34 +131,70 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
   }
 
   Widget _form() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text('Tell us about the person you care for.', style: AppText.body()),
-        const SizedBox(height: 20),
-        _field(_name, 'Name'),
-        const SizedBox(height: 16),
-        _field(_age, 'Age', keyboardType: TextInputType.number),
-        const SizedBox(height: 16),
-        _stagePicker(),
-        const SizedBox(height: 16),
-        _field(_languages, 'Languages (comma separated)'),
-        const SizedBox(height: 16),
-        _field(_region, 'Region'),
-        if (_error != null) ...[
+    return BigCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Patient Information', style: AppText.title(color: AppColors.primaryDark)),
+          const SizedBox(height: 8),
+          Text('Please enter the clinical details for the person you care for.', style: AppText.body(color: AppColors.textMuted)),
+          const SizedBox(height: 24),
+          _field(_name, 'Full Name', Icons.person_outline),
           const SizedBox(height: 16),
-          Text(_error!, style: AppText.body(color: AppColors.gentleWarning)),
-        ],
-        const SizedBox(height: 28),
-        if (_busy)
-          const Center(child: CircularProgressIndicator())
-        else
-          BigButton(
-            label: 'Create patient',
-            icon: Icons.person_add_alt_1_rounded,
-            onTap: _create,
+          _field(_age, 'Age', Icons.cake_outlined, keyboardType: TextInputType.number),
+          const SizedBox(height: 16),
+          _dropdownField<String>(
+            label: 'Primary Language',
+            icon: Icons.language_outlined,
+            value: _selectedLanguage,
+            items: _languages,
+            onChanged: (val) => setState(() => _selectedLanguage = val!),
           ),
-      ],
+          const SizedBox(height: 16),
+          _stagePicker(),
+          const SizedBox(height: 16),
+          _dropdownField<String>(
+            label: 'Region / Location',
+            icon: Icons.location_on_outlined,
+            value: _selectedRegion,
+            items: _regions,
+            onChanged: (val) => setState(() => _selectedRegion = val!),
+          ),
+          const SizedBox(height: 16),
+          _field(
+            _clinicalNotes, 
+            'Clinical Notes / Medical History', 
+            Icons.medical_information_outlined,
+            maxLines: 4,
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.warningSoft,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline, color: AppColors.gentleWarning),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text(_error!, style: AppText.body(color: AppColors.gentleWarning))),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 28),
+          if (_busy)
+            const Center(child: CircularProgressIndicator())
+          else
+            BigButton(
+              label: 'Create Patient Profile',
+              icon: Icons.person_add_alt_1_rounded,
+              onTap: _create,
+            ),
+        ],
+      ),
     );
   }
 
@@ -156,11 +206,11 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
         const Icon(Icons.check_circle_rounded,
             size: 88, color: AppColors.success),
         const SizedBox(height: 20),
-        Text('Patient created!', textAlign: TextAlign.center,
+        Text('Patient Profile Created!', textAlign: TextAlign.center,
             style: AppText.title()),
         const SizedBox(height: 16),
         Text(
-          "Enter this code on the patient's device to link it:",
+          "Enter this secure pairing code on the patient's device to link their account:",
           textAlign: TextAlign.center,
           style: AppText.body(color: AppColors.textMuted),
         ),
@@ -175,7 +225,7 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
         ),
         const SizedBox(height: 28),
         BigButton(
-          label: 'Done',
+          label: 'Complete Setup',
           icon: Icons.arrow_forward_rounded,
           onTap: _finish,
         ),
@@ -183,49 +233,114 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
     );
   }
 
-  Widget _stagePicker() {
-    return InputDecorator(
+  Widget _dropdownField<T>({
+    required String label,
+    required IconData icon,
+    required T value,
+    required List<T> items,
+    required ValueChanged<T?> onChanged,
+  }) {
+    return DropdownButtonFormField<T>(
+      value: value,
+      icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
       decoration: InputDecoration(
-        labelText: 'Dementia stage (1–5)',
+        labelText: label,
         labelStyle: AppText.body(color: AppColors.textMuted),
+        prefixIcon: Icon(icon, color: AppColors.primary),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       ),
-      child: DropdownButton<int>(
-        value: _stage,
-        isExpanded: true,
-        underline: const SizedBox.shrink(),
-        style: AppText.body(),
-        items: [for (int i = 1; i <= 5; i++) i]
-            .map((i) => DropdownMenuItem<int>(
-                  value: i,
-                  child: Text('Stage $i', style: AppText.body()),
-                ))
-            .toList(),
-        onChanged: (v) => setState(() => _stage = v ?? 1),
+      style: AppText.body(),
+      items: items.map((item) {
+        return DropdownMenuItem<T>(
+          value: item,
+          child: Text(item.toString()),
+        );
+      }).toList(),
+      onChanged: onChanged,
+    );
+  }
+
+  Widget _stagePicker() {
+    return DropdownButtonFormField<int>(
+      value: _stage,
+      icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
+      decoration: InputDecoration(
+        labelText: 'Dementia Stage (1-5)',
+        labelStyle: AppText.body(color: AppColors.textMuted),
+        prefixIcon: const Icon(Icons.medical_services_outlined, color: AppColors.primary),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       ),
+      style: AppText.body(),
+      items: const [
+        DropdownMenuItem(value: 1, child: Text('Stage 1 - Normal / No Impairment')),
+        DropdownMenuItem(value: 2, child: Text('Stage 2 - Very Mild Decline')),
+        DropdownMenuItem(value: 3, child: Text('Stage 3 - Mild Decline')),
+        DropdownMenuItem(value: 4, child: Text('Stage 4 - Moderate Decline')),
+        DropdownMenuItem(value: 5, child: Text('Stage 5 - Moderately Severe')),
+      ],
+      onChanged: (v) => setState(() => _stage = v ?? 1),
     );
   }
 
   Widget _field(
     TextEditingController controller,
-    String label, {
+    String label,
+    IconData icon, {
     TextInputType? keyboardType,
+    int maxLines = 1,
   }) {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
+      maxLines: maxLines,
       style: AppText.body(),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: AppText.body(color: AppColors.textMuted),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        alignLabelWithHint: true,
+        prefixIcon: Padding(
+          padding: EdgeInsets.only(
+            top: maxLines > 1 ? 16.0 : 0.0,
+            bottom: maxLines > 1 ? (16.0 * (maxLines - 1)) : 0.0,
+          ),
+          child: Icon(icon, color: AppColors.primary),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
         ),
       ),
     );

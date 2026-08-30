@@ -24,13 +24,14 @@ class PatientProfileAdapter extends TypeAdapter<PatientProfile> {
       languages: (fields[4] as List).cast<String>(),
       region: fields[5] as String,
       createdAt: fields[6] as DateTime,
+      clinicalNotes: fields[7] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, PatientProfile obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -44,7 +45,9 @@ class PatientProfileAdapter extends TypeAdapter<PatientProfile> {
       ..writeByte(5)
       ..write(obj.region)
       ..writeByte(6)
-      ..write(obj.createdAt);
+      ..write(obj.createdAt)
+      ..writeByte(7)
+      ..write(obj.clinicalNotes);
   }
 
   @override

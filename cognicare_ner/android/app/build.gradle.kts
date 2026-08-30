@@ -9,7 +9,7 @@ plugins {
 
 android {
     namespace = "com.cognicare.ner.cognicare_ner"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

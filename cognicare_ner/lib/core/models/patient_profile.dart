@@ -15,6 +15,7 @@ class PatientProfile {
     required this.languages,
     required this.region,
     required this.createdAt,
+    this.clinicalNotes,
   });
 
   @HiveField(0)
@@ -39,6 +40,9 @@ class PatientProfile {
   @HiveField(6)
   final DateTime createdAt;
 
+  @HiveField(7)
+  final String? clinicalNotes;
+
   Map<String, dynamic> toMap() => {
         'id': id,
         'name': name,
@@ -47,6 +51,7 @@ class PatientProfile {
         'languages': languages,
         'region': region,
         'createdAt': createdAt.toIso8601String(),
+        'clinicalNotes': clinicalNotes,
       };
 
   factory PatientProfile.fromMap(Map<String, dynamic> map) => PatientProfile(
@@ -57,5 +62,6 @@ class PatientProfile {
         languages: stringList(map['languages']),
         region: (map['region'] as String?) ?? '',
         createdAt: parseDate(map['createdAt']),
+        clinicalNotes: map['clinicalNotes'] as String?,
       );
 }

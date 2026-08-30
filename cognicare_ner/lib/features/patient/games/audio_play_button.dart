@@ -9,19 +9,57 @@ import '../../../core/theme/app_text.dart';
 /// [src] may be an http(s) URL or a local file path. Playback errors are
 /// swallowed (e.g. missing/offline clip) so the game never crashes.
 class AudioPlayButton extends StatefulWidget {
-  const AudioPlayButton({super.key, required this.src});
+  const AudioPlayButton({super.key, required this.src, this.autoPlay = false});
 
   final String src;
+  final bool autoPlay;
 
   @override
   State<AudioPlayButton> createState() => _AudioPlayButtonState();
 }
 
-class _AudioPlayButtonState extends State<AudioPlayButton> {
+class _AudioPlayButtonState extends State<AudioPlayButton> with SingleTickerProviderStateMixin {
   final AudioPlayer _player = AudioPlayer();
+  late final AnimationController _pulseController;
+  late final Animation<double> _scaleAnimation;
+  bool _isPlaying = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+    _player.playerStateStream.listen((state) {
+      if (!mounted) return;
+      final playing = state.playing && state.processingState != ProcessingState.completed;
+      if (playing != _isPlaying) {
+        setState(() {
+          _isPlaying = playing;
+        });
+        if (playing) {
+          _pulseController.repeat(reverse: true);
+        } else {
+          _pulseController.stop();
+          _pulseController.animateTo(1.0, duration: const Duration(milliseconds: 200));
+        }
+      }
+    });
+    // Auto-play when built if requested
+    if (widget.autoPlay) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _play();
+      });
+    }
+  }
 
   @override
   void dispose() {
+    _pulseController.dispose();
     _player.dispose();
     super.dispose();
   }
@@ -51,17 +89,20 @@ class _AudioPlayButtonState extends State<AudioPlayButton> {
         Semantics(
           button: true,
           label: 'Play the voice',
-          child: Material(
-            color: AppColors.secondarySoft,
-            shape: const CircleBorder(),
-            child: InkWell(
-              customBorder: const CircleBorder(),
-              onTap: _play,
-              child: const SizedBox(
-                width: 160,
-                height: 160,
-                child: Icon(Icons.volume_up_rounded,
-                    size: 88, color: AppColors.secondary),
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: Material(
+              color: AppColors.secondarySoft,
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: _play,
+                child: const SizedBox(
+                  width: 160,
+                  height: 160,
+                  child: Icon(Icons.volume_up_rounded,
+                      size: 88, color: AppColors.secondary),
+                ),
               ),
             ),
           ),
