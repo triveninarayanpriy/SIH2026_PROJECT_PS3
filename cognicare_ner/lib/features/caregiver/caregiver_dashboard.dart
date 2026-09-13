@@ -1,72 +1,54 @@
 import 'dart:math';
-import 'package:fl_chart/fl_chart.dart';
+
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:intl/intl.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/ai/anomaly_detector.dart';
+import '../../core/models/daily_care.dart';
 import '../../core/models/game_result.dart';
+import '../../core/models/patient_profile.dart';
+import '../../core/services/caregiver_note_service.dart';
 import '../../core/services/local_db.dart';
 import '../../core/services/pdf_report_service.dart';
-import '../../core/widgets/care_note_card.dart';
+import '../../core/services/sync_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/care_note_card.dart';
+import '../../core/widgets/clinical_charts.dart';
 import 'caregiver_alert_banner.dart';
 
-class _MedicalCard extends StatelessWidget {
+class _WarmCard extends StatelessWidget {
+  const _WarmCard({required this.child, this.color = Colors.white});
   final Widget child;
-  final EdgeInsetsGeometry padding;
-
-  const _MedicalCard({required this.child, this.padding = const EdgeInsets.all(24)});
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: padding,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: color,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 15,
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 14,
             offset: const Offset(0, 4),
           ),
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
         ],
-        border: Border.all(color: Colors.grey.withOpacity(0.1), width: 1),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.6)),
       ),
       child: child,
     );
   }
 }
 
-/// One tracked cognitive domain: its session key, label, and line colour.
-class _Domain {
-  const _Domain(this.key, this.label, this.color);
-  final String key;
-  final String label;
-  final Color color;
-}
-
-const List<_Domain> _domains = <_Domain>[
-  _Domain('memory', 'Memory', AppColors.primary),
-  _Domain('attention', 'Attention', AppColors.secondary),
-  _Domain('auditory', 'Listening', AppColors.success),
-];
-
-/// Caregiver progress dashboard: per-domain accuracy trends (7 / 30 days),
-/// current difficulty per game, sessions this week, and the alert banner.
+/// Warm, reassuring caregiver dashboard: a friendly status headline, this week
+/// at a glance, the AI weekly note, an engagement trend, and an interactive
+/// daily-care checklist with a weekly completion ring.
 class CaregiverDashboard extends StatefulWidget {
   const CaregiverDashboard({super.key, required this.patientId});
 
@@ -77,8 +59,6 @@ class CaregiverDashboard extends StatefulWidget {
 }
 
 class _CaregiverDashboardState extends State<CaregiverDashboard> {
-  int _windowDays = 7;
-
   @override
   void initState() {
     super.initState();
@@ -88,14 +68,13 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
   void _seedDummyData() {
     final existing = LocalDb.sessionsForPatient(widget.patientId);
     if (existing.isNotEmpty) return;
-    
+
     final rng = Random();
     final uuid = const Uuid();
     final now = DateTime.now();
-    
-    final games = ['pattern', 'faces', 'voice'];
-    final domains = ['attention', 'memory', 'auditory'];
-    
+    final games = <String>['pattern', 'faces', 'voice'];
+    final domains = <String>['attention', 'memory', 'auditory'];
+
     for (int day = 0; day < 14; day++) {
       for (int g = 0; g < 3; g++) {
         final baseAccuracy = 0.5 + (day * 0.03) + (rng.nextDouble() * 0.2);
@@ -114,17 +93,20 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
         LocalDb.sessionsBox.put(result.id, result);
       }
     }
-    
-    // Generate anomalies for the seeded data
     AnomalyDetector.instance.runForPatient(widget.patientId);
+  }
+
+  String get _todayKey {
+    final DateTime d = DateTime.now();
+    return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC), // Professional clinical background
+      backgroundColor: const Color(0xFFFAF7F2), // warm, calm background
       appBar: AppBar(
-        title: const Text('Progress'),
+        title: const Text('How things are going'),
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: AppColors.text,
@@ -134,28 +116,37 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
           constraints: const BoxConstraints(maxWidth: 720),
           child: ValueListenableBuilder<Box<GameResult>>(
             valueListenable: LocalDb.sessionsBox.listenable(),
-            builder: (context, _, _) {
-              final List<GameResult> sessions =
-                  LocalDb.sessionsForPatient(widget.patientId);
-              return SingleChildScrollView(
-                padding: const EdgeInsets.all(AppTheme.screenPadding),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    CaregiverAlertBanner(patientId: widget.patientId),
-                    const SizedBox(height: 16),
-                    CareNoteCard(patientId: widget.patientId),
-                    const SizedBox(height: 16),
-                    _printReportButton(),
-                    const SizedBox(height: 16),
-                    _weekCard(sessions),
-                    const SizedBox(height: 16),
-                    _difficultyCard(),
-                    const SizedBox(height: 16),
-                    _trendCard(sessions),
-                    const SizedBox(height: 24),
-                  ],
-                ),
+            builder: (context, _, __) {
+              return ValueListenableBuilder<Box<DailyCare>>(
+                valueListenable: LocalDb.dailyCareBox.listenable(),
+                builder: (context, ___, ____) {
+                  final List<GameResult> sessions =
+                      LocalDb.sessionsForPatient(widget.patientId);
+                  final WeeklyStats stats =
+                      WeeklyStats.compute(widget.patientId);
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.all(AppTheme.screenPadding),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        _headline(stats),
+                        const SizedBox(height: 16),
+                        CaregiverAlertBanner(patientId: widget.patientId),
+                        const SizedBox(height: 4),
+                        CareNoteCard(patientId: widget.patientId),
+                        const SizedBox(height: 16),
+                        _glance(stats),
+                        const SizedBox(height: 16),
+                        _engagementCard(sessions),
+                        const SizedBox(height: 16),
+                        _dailyCareCard(),
+                        const SizedBox(height: 16),
+                        _printReportButton(),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  );
+                },
               );
             },
           ),
@@ -164,15 +155,306 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
     );
   }
 
+  // ---- Friendly headline -------------------------------------------------
+  Widget _headline(WeeklyStats stats) {
+    final PatientProfile? profile = LocalDb.getProfile(widget.patientId);
+    final String name = profile?.name.split(' ').first ?? 'Your loved one';
+    final double score = stats.overallThisWeek ?? 0;
+
+    String message;
+    IconData icon;
+    List<Color> colors;
+    if (stats.sessionsThisWeek == 0) {
+      message = 'Let’s start a gentle activity with $name today.';
+      icon = Icons.favorite_rounded;
+      colors = AppColors.primaryGradient;
+    } else if (stats.hasAlert) {
+      message = '$name could use a little extra care this week. You’re doing wonderfully. 💛';
+      icon = Icons.volunteer_activism_rounded;
+      colors = <Color>[AppColors.gentleWarning, const Color(0xFFF3A73B)];
+    } else if (score >= 0.75) {
+      message = '$name is having a lovely week! 🌟';
+      icon = Icons.emoji_emotions_rounded;
+      colors = AppColors.successGradient;
+    } else if (stats.decliningDomains.isNotEmpty) {
+      message = '$name is doing okay — a few gentle days. 💛';
+      icon = Icons.spa_rounded;
+      colors = AppColors.secondaryGradient;
+    } else {
+      message = '$name is having a steady week. 💛';
+      icon = Icons.favorite_rounded;
+      colors = AppColors.primaryGradient;
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: colors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(icon, size: 48, color: Colors.white),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              message,
+              style: AppText.title().copyWith(color: Colors.white, fontSize: 22),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---- This week at a glance --------------------------------------------
+  Widget _glance(WeeklyStats stats) {
+    final String bestArea = stats.perDomain.isEmpty
+        ? '—'
+        : (kDomainLabels[(stats.perDomain.entries.toList()
+                  ..sort((a, b) => b.value.compareTo(a.value)))
+                .first
+                .key] ??
+            '—');
+    final String concern = stats.decliningDomains.isEmpty
+        ? 'Nothing to worry about'
+        : (kDomainLabels[stats.decliningDomains.first] ?? '');
+
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: _glanceCard(
+            Icons.videogame_asset_rounded,
+            '${stats.sessionsThisWeek}',
+            'games this week',
+            AppColors.primary,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _glanceCard(
+            Icons.star_rounded,
+            bestArea,
+            'best area',
+            AppColors.success,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _glanceCard(
+            Icons.spa_rounded,
+            concern == 'Nothing to worry about' ? '👍' : concern,
+            concern == 'Nothing to worry about' ? 'all good' : 'gentle focus',
+            AppColors.gentleWarning,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _glanceCard(IconData icon, String value, String label, Color color) {
+    return _WarmCard(
+      child: Column(
+        children: <Widget>[
+          Icon(icon, color: color, size: 30),
+          const SizedBox(height: 8),
+          FittedBox(
+            child: Text(value,
+                style: AppText.title().copyWith(fontSize: 22, color: color)),
+          ),
+          const SizedBox(height: 4),
+          Text(label,
+              textAlign: TextAlign.center,
+              style: AppText.body(color: AppColors.textMuted).copyWith(fontSize: 13)),
+        ],
+      ),
+    );
+  }
+
+  // ---- Engagement trend --------------------------------------------------
+  Widget _engagementCard(List<GameResult> sessions) {
+    return _WarmCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text('This week’s progress', style: AppText.title().copyWith(fontSize: 20)),
+          const SizedBox(height: 6),
+          Text('How well the activities are going, day by day.',
+              style: AppText.body(color: AppColors.textMuted).copyWith(fontSize: 13)),
+          const SizedBox(height: 16),
+          CompositeTrendChart(sessions: sessions, days: 14, height: 200),
+        ],
+      ),
+    );
+  }
+
+  // ---- Daily-care checklist + weekly ring -------------------------------
+  static const List<(String, String, String)> _careItems = <(String, String, String)>[
+    ('meds:morning', 'Morning medicine', 'meds'),
+    ('meds:evening', 'Evening medicine', 'meds'),
+    ('meal:breakfast', 'Breakfast', 'meal'),
+    ('meal:lunch', 'Lunch', 'meal'),
+    ('meal:dinner', 'Dinner', 'meal'),
+    ('water', 'Drank water', 'water'),
+  ];
+
+  DailyCare _today() =>
+      LocalDb.getDailyCare(_todayKey) ??
+      DailyCare(date: _todayKey, medsTaken: const <String>[], hydrationCount: 0, mealsLogged: const <String>[]);
+
+  bool _isDone(DailyCare c, String key) {
+    if (key.startsWith('meds:')) return c.medsTaken.contains(key.split(':')[1]);
+    if (key.startsWith('meal:')) return c.mealsLogged.contains(key.split(':')[1]);
+    if (key == 'water') return c.hydrationCount >= 6;
+    return false;
+  }
+
+  Future<void> _toggle(String key) async {
+    final DailyCare c = _today();
+    List<String> meds = List<String>.of(c.medsTaken);
+    List<String> meals = List<String>.of(c.mealsLogged);
+    int water = c.hydrationCount;
+    if (key.startsWith('meds:')) {
+      final String v = key.split(':')[1];
+      meds.contains(v) ? meds.remove(v) : meds.add(v);
+    } else if (key.startsWith('meal:')) {
+      final String v = key.split(':')[1];
+      meals.contains(v) ? meals.remove(v) : meals.add(v);
+    } else if (key == 'water') {
+      water = water >= 6 ? 0 : 6;
+    }
+    await SyncService.instance.saveDailyCare(
+      widget.patientId,
+      DailyCare(date: _todayKey, medsTaken: meds, hydrationCount: water, mealsLogged: meals),
+    );
+    if (mounted) setState(() {});
+  }
+
+  double _weeklyCompletion() {
+    final DateTime now = DateTime.now();
+    int done = 0;
+    for (int i = 0; i < 7; i++) {
+      final DateTime day = now.subtract(Duration(days: i));
+      final String key =
+          '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
+      final DailyCare? c = LocalDb.getDailyCare(key);
+      if (c == null) continue;
+      final int score = _careItems.where((e) => _isDone(c, e.$1)).length;
+      done += score;
+    }
+    final int total = 7 * _careItems.length;
+    return total == 0 ? 0 : done / total;
+  }
+
+  Widget _dailyCareCard() {
+    final DailyCare today = _today();
+    final int doneToday = _careItems.where((e) => _isDone(today, e.$1)).length;
+    final double weekly = _weeklyCompletion();
+    return _WarmCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text('Today’s care', style: AppText.title().copyWith(fontSize: 20)),
+                    const SizedBox(height: 4),
+                    Text('$doneToday of ${_careItems.length} done today',
+                        style: AppText.body(color: AppColors.textMuted).copyWith(fontSize: 13)),
+                  ],
+                ),
+              ),
+              _ring(weekly),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: <Widget>[
+              for (final (String, String, String) item in _careItems)
+                _careChip(item.$1, item.$2, _isDone(today, item.$1)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _careChip(String key, String label, bool done) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: () => _toggle(key),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: done ? AppColors.success.withValues(alpha: 0.12) : AppColors.surface,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: done ? AppColors.success : AppColors.border,
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(done ? Icons.check_circle_rounded : Icons.circle_outlined,
+                size: 20, color: done ? AppColors.success : AppColors.textMuted),
+            const SizedBox(width: 8),
+            Text(label,
+                style: AppText.body().copyWith(
+                    fontSize: 15,
+                    color: done ? AppColors.success : AppColors.text,
+                    fontWeight: done ? FontWeight.w600 : FontWeight.w400)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _ring(double value) {
+    return SizedBox(
+      width: 64,
+      height: 64,
+      child: Stack(
+        alignment: Alignment.center,
+        children: <Widget>[
+          SizedBox(
+            width: 64,
+            height: 64,
+            child: CircularProgressIndicator(
+              value: value,
+              strokeWidth: 7,
+              backgroundColor: AppColors.border.withValues(alpha: 0.5),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                value >= 0.7 ? AppColors.success : AppColors.gentleWarning,
+              ),
+            ),
+          ),
+          Text('${(value * 100).round()}%',
+              style: AppText.body().copyWith(fontSize: 14, fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
+  }
+
+  // ---- Clinical report (kept) -------------------------------------------
   Future<void> _generatePdf(BuildContext context) async {
     await PdfReportService.generateAndPrintReport(context, widget.patientId, null);
   }
 
   Widget _printReportButton() {
-    return _MedicalCard(
-      padding: const EdgeInsets.all(20),
+    return _WarmCard(
       child: Row(
-        children: [
+        children: <Widget>[
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -185,11 +467,11 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Generate Clinical Report', style: AppText.title().copyWith(fontSize: 20)),
+              children: <Widget>[
+                Text('Report for the doctor', style: AppText.title().copyWith(fontSize: 18)),
                 const SizedBox(height: 4),
-                Text('Download a detailed PDF report for doctors.',
-                    style: AppText.body(color: AppColors.textMuted).copyWith(fontSize: 15)),
+                Text('Download a clear PDF summary to share.',
+                    style: AppText.body(color: AppColors.textMuted).copyWith(fontSize: 14)),
               ],
             ),
           ),
@@ -197,252 +479,13 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
             onPressed: () => _generatePdf(context),
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.primary,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: Text('Print', style: AppText.button().copyWith(fontSize: 16)),
+            child: Text('Print', style: AppText.button().copyWith(fontSize: 15)),
           ),
         ],
       ),
     );
-  }
-
-  Widget _weekCard(List<GameResult> sessions) {
-    final DateTime weekAgo = DateTime.now().subtract(const Duration(days: 7));
-    final int count = sessions.where((s) => s.at.isAfter(weekAgo)).length;
-    return _MedicalCard(
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Icon(Icons.calendar_today_rounded,
-                size: 40, color: AppColors.primary),
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('$count', style: AppText.gameQuestion().copyWith(color: AppColors.primary, fontWeight: FontWeight.bold)),
-                Text('games played this week',
-                    style: AppText.body(color: AppColors.textMuted)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _difficultyCard() {
-    Widget row(String label, String game) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(label, style: AppText.body().copyWith(fontSize: 18)),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.secondarySoft,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text('Level ${LocalDb.gameDifficulty(game)}',
-                    style: AppText.body().copyWith(fontWeight: FontWeight.w600, color: AppColors.secondary)),
-              ),
-            ],
-          ),
-        );
-    return _MedicalCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Current difficulty', style: AppText.title()),
-          const SizedBox(height: 16),
-          row('Pattern (attention)', 'pattern'),
-          const Divider(height: 16, color: Color(0xFFEEEEEE)),
-          row('Faces (memory)', 'faces'),
-          const Divider(height: 16, color: Color(0xFFEEEEEE)),
-          row('Voice (listening)', 'voice'),
-        ],
-      ),
-    );
-  }
-
-  Widget _trendCard(List<GameResult> sessions) {
-    final bool anyData = _domains.any((d) => _spots(sessions, d.key).isNotEmpty);
-    return _MedicalCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(child: Text('Accuracy trend', style: AppText.title())),
-              _windowToggle(),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _legend(),
-          const SizedBox(height: 24),
-          if (!anyData)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              child: Text('No game sessions in this period yet.',
-                  style: AppText.body(color: AppColors.textMuted)),
-            )
-          else
-            SizedBox(height: 260, child: _chart(sessions)),
-        ],
-      ),
-    );
-  }
-
-  Widget _windowToggle() {
-    Widget chip(int days, String label) {
-      final bool active = _windowDays == days;
-      return GestureDetector(
-        onTap: () => setState(() => _windowDays = days),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: active ? AppColors.primary : AppColors.surface,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: AppColors.primary, width: 1.5),
-          ),
-          child: Text(
-            label,
-            style: AppText.body(
-              color: active ? Colors.white : AppColors.primary,
-            ).copyWith(fontSize: 16),
-          ),
-        ),
-      );
-    }
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        chip(7, '7d'),
-        const SizedBox(width: 8),
-        chip(30, '30d'),
-      ],
-    );
-  }
-
-  Widget _legend() {
-    return Wrap(
-      spacing: 16,
-      runSpacing: 8,
-      children: [
-        for (final _Domain d in _domains)
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 14,
-                height: 14,
-                decoration:
-                    BoxDecoration(color: d.color, shape: BoxShape.circle),
-              ),
-              const SizedBox(width: 6),
-              Text(d.label,
-                  style: AppText.body(color: AppColors.textMuted)
-                      .copyWith(fontSize: 15)),
-            ],
-          ),
-      ],
-    );
-  }
-
-  Widget _chart(List<GameResult> sessions) {
-    final double maxX = (_windowDays - 1).toDouble();
-    return LineChart(
-      LineChartData(
-        minX: 0,
-        maxX: maxX,
-        minY: 0,
-        maxY: 1,
-        gridData: const FlGridData(
-          show: true,
-          drawVerticalLine: false,
-          horizontalInterval: 0.25,
-        ),
-        borderData: FlBorderData(show: false),
-        titlesData: FlTitlesData(
-          topTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              interval: 0.5,
-              reservedSize: 40,
-              getTitlesWidget: (v, _) => Text('${(v * 100).round()}%',
-                  style: AppText.body(color: AppColors.textMuted)
-                      .copyWith(fontSize: 12)),
-            ),
-          ),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              interval: _windowDays <= 7 ? 3 : 10,
-              reservedSize: 28,
-              getTitlesWidget: (v, _) {
-                final int daysAgo = (maxX - v).round();
-                return Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(
-                    daysAgo == 0 ? 'today' : '${daysAgo}d',
-                    style: AppText.body(color: AppColors.textMuted)
-                        .copyWith(fontSize: 12),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-        lineBarsData: [
-          for (final _Domain d in _domains)
-            LineChartBarData(
-              spots: _spots(sessions, d.key),
-              isCurved: true,
-              color: d.color,
-              barWidth: 3,
-              dotData: const FlDotData(show: true),
-              belowBarData: BarAreaData(show: false),
-            ),
-        ],
-      ),
-    );
-  }
-
-  /// Daily average accuracy spots for [domain] over the current window.
-  List<FlSpot> _spots(List<GameResult> sessions, String domain) {
-    final DateTime now = DateTime.now();
-    final DateTime startDay = DateTime(now.year, now.month, now.day)
-        .subtract(Duration(days: _windowDays - 1));
-    final Map<int, List<double>> byDay = <int, List<double>>{};
-    for (final GameResult s in sessions) {
-      if (s.domain != domain || s.at.isBefore(startDay)) continue;
-      final int di = s.at.difference(startDay).inDays;
-      if (di < 0 || di >= _windowDays) continue;
-      byDay.putIfAbsent(di, () => <double>[]).add(s.accuracy);
-    }
-    final List<MapEntry<int, List<double>>> entries = byDay.entries.toList()
-      ..sort((a, b) => a.key.compareTo(b.key));
-    return [
-      for (final MapEntry<int, List<double>> e in entries)
-        FlSpot(e.key.toDouble(),
-            e.value.reduce((a, b) => a + b) / e.value.length),
-    ];
   }
 }
-
-
-
