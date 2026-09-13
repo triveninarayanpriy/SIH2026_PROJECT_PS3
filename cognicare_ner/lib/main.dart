@@ -7,6 +7,7 @@ import 'app.dart';
 import 'core/services/demo_seeder.dart';
 import 'core/services/local_db.dart';
 import 'core/services/locale_controller.dart';
+import 'core/services/nawal_remote.dart';
 import 'core/services/sync_service.dart';
 import 'firebase_options.dart';
 
@@ -38,6 +39,10 @@ void main() async {
   );
   // Debug-only: seed a fully-populated demo patient when DEMO=true.
   await DemoSeeder.maybeLoadFromEnvironment();
+
+  // Fire-and-forget: begin scanning for the NAWAL BLE remote (Android only;
+  // a no-op on web). Games work by touch whether or not it ever connects.
+  NawalRemote.instance.start();
 
   runApp(const CogniCareApp(role: '', roleSwitching: true));
 }

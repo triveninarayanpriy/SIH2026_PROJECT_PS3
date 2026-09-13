@@ -9,12 +9,14 @@ import '../../core/theme/app_text.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/big_button.dart';
 import '../../core/widgets/big_card.dart';
+import '../../core/widgets/remote_status_chip.dart';
 import 'caregiver_alert_banner.dart';
 import 'caregiver_dashboard.dart';
 import 'caregiver_game_config_screen.dart';
 import 'caregiver_media_hub.dart';
 import '../shared/language_selector_screen.dart';
 import 'caregiver_reminders_screen.dart';
+import 'remote_connect_screen.dart';
 
 /// Caregiver landing screen. Shows the alert banner, the linked patient + the
 /// pairing code, a shortcut into the progress dashboard, and sign-out.
@@ -33,6 +35,7 @@ class CaregiverHome extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Caregiver Hub'),
         actions: [
+          const Center(child: RemoteStatusChip(compact: true)),
           IconButton(
             tooltip: 'Sign out',
             icon: const Icon(Icons.logout_rounded),
@@ -116,6 +119,14 @@ class CaregiverHome extends StatelessWidget {
                   icon: Icons.videogame_asset_rounded,
                   color: AppColors.success,
                   onTap: () => _open(context, const CaregiverGameConfigScreen()),
+                ),
+                const SizedBox(height: 16),
+                _ActionCard(
+                  title: 'NAWAL Remote',
+                  description: 'Pair the Bluetooth remote and see its buttons',
+                  icon: Icons.gamepad_rounded,
+                  color: AppColors.secondaryDark,
+                  onTap: () => _open(context, const RemoteConnectScreen()),
                 ),
                 const SizedBox(height: 16),
                 _ActionCard(

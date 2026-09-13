@@ -12,6 +12,7 @@ import '../../core/theme/app_text.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/big_button.dart';
 import '../../core/widgets/big_card.dart';
+import '../../core/widgets/remote_status_chip.dart';
 import '../../l10n/app_localizations.dart';
 import 'calm_mode.dart';
 import 'games/family_game.dart';
@@ -194,12 +195,10 @@ class _PatientHomeState extends State<PatientHome> {
                     ),
                   ),
                 ),
-                actions: [
-                  IconButton(
-                    tooltip: 'Unlink device',
-                    icon: const Icon(Icons.link_off_rounded, color: Colors.white),
-                    onPressed: LocalDb.clearLinkedPatientId,
-                  ),
+                actions: const [
+                  Center(child: RemoteStatusChip(compact: true)),
+                  SizedBox(width: 4),
+                  _UnlinkButton(),
                 ],
               ),
               SliverToBoxAdapter(
@@ -266,6 +265,19 @@ class _PatientHomeState extends State<PatientHome> {
           );
         },
       ),
+    );
+  }
+}
+
+class _UnlinkButton extends StatelessWidget {
+  const _UnlinkButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: 'Unlink device',
+      icon: const Icon(Icons.link_off_rounded, color: Colors.white),
+      onPressed: LocalDb.clearLinkedPatientId,
     );
   }
 }

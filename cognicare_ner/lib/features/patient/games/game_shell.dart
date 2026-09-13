@@ -5,9 +5,11 @@ import 'package:just_audio/just_audio.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/ai/anomaly_detector.dart';
+import '../../../core/models/alert.dart';
 import '../../../core/models/game_result.dart';
 import '../../../core/models/media_item.dart';
 import '../../../core/services/local_db.dart';
+import '../../../core/services/nawal_remote.dart';
 import '../../../core/services/stt_service.dart';
 import '../../../core/services/sync_service.dart';
 import '../../../core/services/tts_service.dart';
@@ -17,6 +19,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/big_button.dart';
 import '../../../core/widgets/big_progress_dots.dart';
 import '../../../core/widgets/gentle_feedback.dart';
+import '../../../core/widgets/remote_status_chip.dart';
 import '../../../core/widgets/speak_label.dart';
 import '../../../l10n/app_localizations.dart';
 import '../calm_mode.dart';
@@ -73,6 +76,7 @@ class _GameShellState extends State<GameShell> {
   bool _listening = false; // optional voice-answer state
   Timer? _idleTimer;
   Timer? _listenTimer;
+  StreamSubscription<RemoteButton>? _remoteSub;
   late final DateTime _start;
 
   int get _total => widget.rounds.length;
@@ -83,14 +87,75 @@ class _GameShellState extends State<GameShell> {
     super.initState();
     _start = DateTime.now();
     _resetIdle();
+    // The NAWAL BLE remote drives the same game (Android only; silent on web).
+    _remoteSub = NawalRemote.instance.buttons.listen(_onRemote);
   }
 
   @override
   void dispose() {
     _idleTimer?.cancel();
     _listenTimer?.cancel();
+    _remoteSub?.cancel();
     _chime.dispose();
     super.dispose();
+  }
+
+  /// Route a NAWAL remote press to the same actions a tap would trigger.
+  ///
+  ///  - 1-9   select the option at that position (if it exists)
+  ///  - back  / sound  replay the spoken prompt (and family voice if mapped)
+  ///  - hint  gentle nudge + replay
+  ///  - call  fire a caregiver SOS alert
+  /// next / pageUp / pageDown are handled by paged/menu screens, not here.
+  void _onRemote(RemoteButton b) {
+    if (!mounted || _finished || _leaving) return;
+    final int? optionIndex = remoteButtonOptionIndex(b);
+    if (optionIndex != null) {
+      if (!_locked && optionIndex < _round.choices.length) {
+        _answer(_round.choices[optionIndex].id);
+      }
+      return;
+    }
+    switch (b) {
+      case RemoteButton.back:
+      case RemoteButton.sound:
+        _repeatPrompt();
+        break;
+      case RemoteButton.hint:
+        _hint('Take your time — listen again, then pick the matching answer.');
+        _repeatPrompt();
+        break;
+      case RemoteButton.call:
+        _fireSos();
+        break;
+      default:
+        break;
+    }
+  }
+
+  void _repeatPrompt() {
+    if (!mounted) return;
+    _resetIdle();
+    final String prompt = _localizedPrompt(context);
+    TtsService.instance.play(prompt, audioPath: _round.promptAudioPath);
+  }
+
+  /// Patient-triggered "I need help" — records a caregiver SOS alert.
+  Future<void> _fireSos() async {
+    try {
+      await SyncService.instance.saveAlert(
+        Alert(
+          id: _uuid.v4(),
+          patientId: widget.patientId,
+          type: 'sos',
+          domain: '',
+          deltaPct: 0,
+          at: DateTime.now(),
+          seen: false,
+        ),
+      );
+      if (mounted) _hint('We let your caregiver know you need help. 💛');
+    } catch (_) {}
   }
 
   Future<void> _playChime(String asset) async {
@@ -238,7 +303,13 @@ class _GameShellState extends State<GameShell> {
     final String prompt = _localizedPrompt(context);
     _autoSpeak(prompt);
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
+      appBar: AppBar(
+        title: Text(widget.title),
+        actions: const <Widget>[
+          Center(child: RemoteStatusChip(compact: true)),
+          SizedBox(width: 4),
+        ],
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(AppTheme.screenPadding),
