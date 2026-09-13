@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
@@ -16,6 +15,7 @@ import '../../core/theme/app_text.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/big_button.dart';
 import '../../core/widgets/big_card.dart';
+import '../../core/widgets/platform_media.dart';
 import '../../core/widgets/voice_recorder_widget.dart';
 import 'photo_viewer_screen.dart';
 
@@ -208,7 +208,7 @@ class _CaregiverMediaHubState extends State<CaregiverMediaHub> with SingleTicker
                       Expanded(
                         child: ClipRRect(
                           borderRadius: const BorderRadius.vertical(top: Radius.circular(AppTheme.cardRadius)),
-                          child: Image.file(File(photo.localPath ?? ''), fit: BoxFit.cover),
+                          child: MediaImage(src: photo.localPath ?? photo.url, fit: BoxFit.cover),
                         ),
                       ),
                       Padding(
@@ -264,8 +264,15 @@ class _CaregiverMediaHubState extends State<CaregiverMediaHub> with SingleTicker
                       IconButton(
                           icon: const Icon(Icons.play_circle_fill, size: 40, color: AppColors.secondary),
                           onPressed: () async {
-                          await _audioPlayer.setFilePath(item.localPath ?? '');
-                          _audioPlayer.play();
+                          final String src = (item.localPath?.isNotEmpty ?? false) ? item.localPath! : item.url;
+                          try {
+                            if (isLocalFilePath(src)) {
+                              await _audioPlayer.setFilePath(src);
+                            } else if (src.isNotEmpty) {
+                              await _audioPlayer.setUrl(src);
+                            }
+                            _audioPlayer.play();
+                          } catch (_) {}
                         },
                       ),
                       IconButton(
@@ -446,8 +453,14 @@ class _PromptRecordCardState extends State<_PromptRecordCard> {
   Future<void> _playRecording() async {
     if (_recordedPath != null) {
       setState(() => _isPlaying = true);
-      await _player.setFilePath(_recordedPath!);
-      await _player.play();
+      try {
+        if (isLocalFilePath(_recordedPath)) {
+          await _player.setFilePath(_recordedPath!);
+        } else {
+          await _player.setUrl(_recordedPath!);
+        }
+        await _player.play();
+      } catch (_) {}
       setState(() => _isPlaying = false);
     }
   }

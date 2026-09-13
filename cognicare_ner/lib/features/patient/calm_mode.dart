@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 
@@ -10,6 +9,7 @@ import '../../core/theme/app_text.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/big_button.dart';
 import '../../core/widgets/big_card.dart';
+import '../../core/widgets/platform_media.dart';
 import '../../l10n/app_localizations.dart';
 
 class CalmModeScreen extends StatefulWidget {
@@ -232,9 +232,14 @@ class _SlideshowScreenState extends State<_SlideshowScreen> {
     final musicList = LocalDb.mediaByType('music');
     if (musicList.isNotEmpty) {
       final m = musicList.first;
-      if (m.localPath != null && m.localPath!.isNotEmpty) {
+      final String src = (m.localPath?.isNotEmpty ?? false) ? m.localPath! : m.url;
+      if (src.isNotEmpty) {
         try {
-          await _player.setFilePath(m.localPath!);
+          if (isLocalFilePath(src)) {
+            await _player.setFilePath(src);
+          } else {
+            await _player.setUrl(src);
+          }
           await _player.setLoopMode(LoopMode.all);
           _player.play();
         } catch (_) {}
@@ -267,18 +272,16 @@ class _SlideshowScreenState extends State<_SlideshowScreen> {
         children: [
           AnimatedSwitcher(
             duration: const Duration(seconds: 1),
-            child: (currentPhoto.localPath != null && currentPhoto.localPath!.isNotEmpty)
-                ? Image.file(
-                    File(currentPhoto.localPath!),
-                    key: ValueKey<String>(currentPhoto.id),
-                    fit: BoxFit.cover,
-                  )
-                : Image.network(
-                    currentPhoto.url,
-                    key: ValueKey<String>(currentPhoto.id),
-                    fit: BoxFit.cover,
-                    errorBuilder: (_,__,___) => const Icon(Icons.error, color: Colors.white, size: 50),
-                  ),
+            child: MediaImage(
+              key: ValueKey<String>(currentPhoto.id),
+              src: (currentPhoto.localPath?.isNotEmpty ?? false)
+                  ? currentPhoto.localPath
+                  : currentPhoto.url,
+              fit: BoxFit.cover,
+              placeholder: const Center(
+                child: Icon(Icons.error, color: Colors.white, size: 50),
+              ),
+            ),
           ),
           Positioned(
             bottom: 40,
@@ -330,7 +333,8 @@ class _MusicPlayerScreenState extends State<_MusicPlayerScreen> {
 
   Future<void> _playTrack(int index) async {
     final track = _tracks[index];
-    if (track.localPath != null && track.localPath!.isNotEmpty) {
+    final String src = (track.localPath?.isNotEmpty ?? false) ? track.localPath! : track.url;
+    if (src.isNotEmpty) {
       if (_playingIndex == index) {
         if (_player.playing) {
           _player.pause();
@@ -338,8 +342,14 @@ class _MusicPlayerScreenState extends State<_MusicPlayerScreen> {
           _player.play();
         }
       } else {
-        await _player.setFilePath(track.localPath!);
-        _player.play();
+        try {
+          if (isLocalFilePath(src)) {
+            await _player.setFilePath(src);
+          } else {
+            await _player.setUrl(src);
+          }
+          _player.play();
+        } catch (_) {}
       }
       setState(() {
         _playingIndex = index;

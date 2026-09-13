@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../../core/models/media_item.dart';
@@ -7,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/big_button.dart';
+import '../../../core/widgets/platform_media.dart';
 
 /// A family member assembled from labelled [MediaItem]s (grouped by label).
 @immutable
@@ -88,11 +88,8 @@ class FamilyPhoto extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String? s = src;
-    if (s != null && s.isNotEmpty) {
-      final ImageProvider provider = s.startsWith('http') 
-          ? NetworkImage(s) as ImageProvider
-          : (s.startsWith('assets/') ? AssetImage(s) as ImageProvider : FileImage(File(s)) as ImageProvider);
+    final ImageProvider? provider = mediaImageProvider(src);
+    if (provider != null) {
       return ClipOval(
         child: Image(
           image: provider,

@@ -1,8 +1,8 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/platform_media.dart';
 
 
 class PhotoViewerScreen extends StatefulWidget {
@@ -137,8 +137,8 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
                 margin: const EdgeInsets.all(AppTheme.screenPadding),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(AppTheme.cardRadius - 2),
-                  child: Image.file(
-                    File(widget.imagePath),
+                  child: MediaImage(
+                    src: widget.imagePath,
                     fit: BoxFit.contain,
                   ),
                 ),

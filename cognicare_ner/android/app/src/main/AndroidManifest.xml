@@ -2,6 +2,16 @@
     <!-- Voice services: on-device speech-to-text and clip recording. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- NAWAL BLE remote (ESP32). Android 12+ uses the split BT permissions;
+         neverForLocation keeps us off location scope. Older devices fall back
+         to the legacy BLUETOOTH/ADMIN + FINE_LOCATION set (capped at API 30). -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:maxSdkVersion="30" />
     <application
         android:label="NAWAL"
         android:name="${applicationName}"

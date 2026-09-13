@@ -1,5 +1,6 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -7,6 +8,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_text.dart';
 import '../theme/app_theme.dart';
 import 'big_button.dart';
+import 'platform_media.dart';
 
 class VoiceRecorderWidget extends StatefulWidget {
   final String languageCode;
@@ -94,9 +96,13 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> with SingleTi
         return;
       }
       
-      final Directory tempDir = Directory.systemTemp;
-      final String path = '${tempDir.path}/record_${DateTime.now().millisecondsSinceEpoch}.m4a';
-      
+      final String stamp = DateTime.now().millisecondsSinceEpoch.toString();
+      // On web the `record` plugin manages its own blob and ignores `path`;
+      // on mobile/desktop we persist into the app documents directory.
+      final String path = kIsWeb
+          ? 'record_$stamp.m4a'
+          : '${(await getApplicationDocumentsDirectory()).path}/record_$stamp.m4a';
+
       await _audioRecorder.start(
         const RecordConfig(encoder: AudioEncoder.aacLc),
         path: path,
@@ -116,9 +122,15 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> with SingleTi
       await _audioPlayer.stop();
       setState(() => _isPlaying = false);
     } else {
-      await _audioPlayer.setFilePath(_audioPath!);
-      await _audioPlayer.play();
-      setState(() => _isPlaying = true);
+      try {
+        if (isLocalFilePath(_audioPath)) {
+          await _audioPlayer.setFilePath(_audioPath!);
+        } else {
+          await _audioPlayer.setUrl(_audioPath!);
+        }
+        await _audioPlayer.play();
+        setState(() => _isPlaying = true);
+      } catch (_) {}
     }
   }
 

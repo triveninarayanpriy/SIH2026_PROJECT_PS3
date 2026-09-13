@@ -45,6 +45,9 @@ dependencies:
   cached_network_image: ^3.4.1
   permission_handler: ^11.4.0
 
+  # Hardware: NAWAL BLE remote (Android only; guarded on web)
+  flutter_blue_plus: ^1.32.12
+
   # UI / utilities
   google_fonts: 8.2.1
   uuid: 4.6.0
