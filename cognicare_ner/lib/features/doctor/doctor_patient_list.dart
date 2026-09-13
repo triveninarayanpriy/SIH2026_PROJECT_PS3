@@ -3,13 +3,13 @@ import 'package:intl/intl.dart';
 
 import '../../core/services/auth_service.dart';
 import '../../core/services/firestore_service.dart';
+import '../../core/services/local_db.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text.dart';
 import '../../core/widgets/big_card.dart';
+import '../../core/widgets/clinical_charts.dart';
 import 'doctor_patient_detail.dart';
 import 'doctor_repository.dart';
-
-const Color _clinicalRed = Color(0xFFD64545);
 
 /// Doctor web dashboard — read-only patient list.
 ///
@@ -220,6 +220,8 @@ class _DoctorPatientListState extends State<DoctorPatientList> {
   }
 
   Widget _rowTile(DoctorPatientRow r) {
+    final Triage triage =
+        triageFor(LocalDb.sessionsForPatient(r.id), hasAlert: r.hasAlert);
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Material(
@@ -264,14 +266,28 @@ class _DoctorPatientListState extends State<DoctorPatientList> {
                     ],
                   ),
                 ),
-                if (r.hasAlert)
-                  Container(
-                    width: 12,
-                    height: 12,
-                    margin: const EdgeInsets.only(right: 10),
-                    decoration: const BoxDecoration(
-                        color: _clinicalRed, shape: BoxShape.circle),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  margin: const EdgeInsets.only(right: 8),
+                  decoration: BoxDecoration(
+                    color: triage.color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
                   ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration:
+                            BoxDecoration(color: triage.color, shape: BoxShape.circle),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(triage.label,
+                          style: _t(12, color: triage.color, weight: FontWeight.w700)),
+                    ],
+                  ),
+                ),
                 const Icon(Icons.chevron_right_rounded,
                     color: AppColors.textMuted),
               ],

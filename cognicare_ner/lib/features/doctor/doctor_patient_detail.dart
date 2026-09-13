@@ -7,9 +7,20 @@ import '../../core/models/game_result.dart';
 import '../../core/services/local_db.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text.dart';
+import '../../core/widgets/care_note_card.dart';
+import '../../core/widgets/clinical_charts.dart';
 import '../../core/widgets/domain_trend_chart.dart';
 import '../../core/services/pdf_report_service.dart';
 import 'doctor_repository.dart';
+
+/// Full 5-domain series for the doctor trend chart.
+const List<DomainSeries> _doctorSeries = <DomainSeries>[
+  DomainSeries('memory', 'Memory', AppColors.primary),
+  DomainSeries('attention', 'Attention', AppColors.secondary),
+  DomainSeries('auditory', 'Listening', AppColors.success),
+  DomainSeries('language', 'Language', Color(0xFF8E44AD)),
+  DomainSeries('executive', 'Sequencing', Color(0xFFE67E22)),
+];
 
 const Color _clinicalRed = Color(0xFFD64545);
 
@@ -162,6 +173,12 @@ class _DoctorPatientDetailState extends State<DoctorPatientDetail> {
                       ],
                       _header(d),
                       const SizedBox(height: 16),
+                      CareNoteCard(patientId: widget.patientId, clinical: true),
+                      const SizedBox(height: 16),
+                      _compositeCard(d),
+                      const SizedBox(height: 16),
+                      _radarCard(d),
+                      const SizedBox(height: 16),
                       _trendCard(d),
                       const SizedBox(height: 16),
                       _alertsCard(d),
@@ -184,6 +201,11 @@ class _DoctorPatientDetailState extends State<DoctorPatientDetail> {
         ? 'Code ${widget.patientId}'
         : 'Age ${d!.profile!.age}  ·  Stage ${d.profile!.stage}  ·  '
             '${d.profile!.region}  ·  ${d.profile!.id}';
+    final List<GameResult> sessions = d?.sessions ?? const <GameResult>[];
+    final bool hasAlert = (d?.alerts ?? const <Alert>[])
+        .any((a) => a.type == 'cognitive_drop');
+    final Triage triage = triageFor(sessions, hasAlert: hasAlert);
+    final double? composite = compositeScore(sessions);
     return _MedicalCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,6 +223,7 @@ class _DoctorPatientDetailState extends State<DoctorPatientDetail> {
                   ],
                 ),
               ),
+              _triageChip(triage, composite),
             ],
           ),
           const SizedBox(height: 24),
@@ -244,15 +267,86 @@ class _DoctorPatientDetailState extends State<DoctorPatientDetail> {
     );
   }
 
+  Widget _triageChip(Triage triage, double? composite) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: triage.color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: triage.color.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(color: triage.color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(triage.label,
+                  style: _t(15, color: triage.color, weight: FontWeight.w700)),
+              if (composite != null)
+                Text('Composite ${(composite * 100).round()}%',
+                    style: _t(12, color: AppColors.textMuted)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _compositeCard(DoctorPatientData? d) {
+    return _MedicalCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Composite cognitive score — last 30 days',
+              style: _t(20, weight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          Text('Mean accuracy across all domains; the dashed line marks the '
+              'anomaly change-point.',
+              style: _t(13, color: AppColors.textMuted)),
+          const SizedBox(height: 20),
+          CompositeTrendChart(
+            sessions: d?.sessions ?? const <GameResult>[],
+            alerts: d?.alerts ?? const <Alert>[],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _radarCard(DoctorPatientData? d) {
+    return _MedicalCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Cognitive domain profile', style: _t(20, weight: FontWeight.w600)),
+          const SizedBox(height: 20),
+          Center(
+            child: DomainRadarChart(sessions: d?.sessions ?? const <GameResult>[]),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _trendCard(DoctorPatientData? d) {
     return _MedicalCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Accuracy trend — last 30 days',
+          Text('Per-domain accuracy — last 30 days',
               style: _t(20, weight: FontWeight.w600)),
           const SizedBox(height: 20),
-          DomainTrendChart(sessions: d?.sessions ?? const <GameResult>[]),
+          DomainTrendChart(
+            sessions: d?.sessions ?? const <GameResult>[],
+            series: _doctorSeries,
+          ),
         ],
       ),
     );
@@ -373,7 +467,12 @@ class _DoctorPatientDetailState extends State<DoctorPatientDetail> {
           if (care.isEmpty)
             Text('No care logs yet.',
                 style: _t(15, color: AppColors.textMuted))
-          else
+          else ...[
+            Text('Adherence — last 7 days',
+                style: _t(14, color: AppColors.textMuted, weight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            AdherenceStrip(care: care),
+            const SizedBox(height: 20),
             for (final DailyCare c in care.take(7))
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
@@ -396,6 +495,7 @@ class _DoctorPatientDetailState extends State<DoctorPatientDetail> {
                   ],
                 ),
               ),
+          ],
         ],
       ),
     );
@@ -409,6 +509,10 @@ class _DoctorPatientDetailState extends State<DoctorPatientDetail> {
         return 'Attention';
       case 'auditory':
         return 'Listening';
+      case 'language':
+        return 'Language';
+      case 'executive':
+        return 'Sequencing';
       default:
         return d;
     }
