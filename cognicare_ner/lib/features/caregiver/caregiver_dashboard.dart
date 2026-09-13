@@ -12,6 +12,7 @@ import '../../core/ai/anomaly_detector.dart';
 import '../../core/models/game_result.dart';
 import '../../core/services/local_db.dart';
 import '../../core/services/pdf_report_service.dart';
+import '../../core/widgets/care_note_card.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text.dart';
 import '../../core/theme/app_theme.dart';
@@ -142,6 +143,8 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     CaregiverAlertBanner(patientId: widget.patientId),
+                    const SizedBox(height: 16),
+                    CareNoteCard(patientId: widget.patientId),
                     const SizedBox(height: 16),
                     _printReportButton(),
                     const SizedBox(height: 16),

@@ -58,6 +58,99 @@ class AiService {
     return _tryGemini(prompt);
   }
 
+  /// Free-text generation (Groq → Gemini) for short caregiver/clinician notes.
+  ///
+  /// Returns the trimmed text, or null on any error / when no key is set. Only
+  /// pass ANONYMIZED content in [userPrompt] (no names, photos, or voice).
+  Future<String?> generateText({
+    required String systemPrompt,
+    required String userPrompt,
+  }) async {
+    final String? viaGroq = await _tryGroqText(systemPrompt, userPrompt);
+    if (viaGroq != null && viaGroq.isNotEmpty) return viaGroq;
+    return _tryGeminiText(systemPrompt, userPrompt);
+  }
+
+  Future<String?> _tryGroqText(String system, String user) async {
+    final String key = _key('GROQ_API_KEY');
+    if (key.isEmpty) return null;
+    try {
+      final http.Response resp = await http
+          .post(
+            Uri.parse(_groqUrl),
+            headers: <String, String>{
+              'Authorization': 'Bearer $key',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode(<String, dynamic>{
+              'model': _groqModel,
+              'temperature': 0.5,
+              'messages': <Map<String, String>>[
+                {'role': 'system', 'content': system},
+                {'role': 'user', 'content': user},
+              ],
+            }),
+          )
+          .timeout(_timeout);
+      if (resp.statusCode != 200) return null;
+      final Map<String, dynamic> data =
+          jsonDecode(resp.body) as Map<String, dynamic>;
+      final Object? choices = data['choices'];
+      final Object? first =
+          (choices is List && choices.isNotEmpty) ? choices.first : null;
+      final Object? message = (first is Map) ? first['message'] : null;
+      final Object? content = (message is Map) ? message['content'] : null;
+      return content is String ? content.trim() : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<String?> _tryGeminiText(String system, String user) async {
+    final String key = _key('GEMINI_API_KEY');
+    if (key.isEmpty) return null;
+    try {
+      final Uri url = Uri.parse(
+        'https://generativelanguage.googleapis.com/v1beta/models/'
+        '$_geminiModel:generateContent?key=$key',
+      );
+      final http.Response resp = await http
+          .post(
+            url,
+            headers: <String, String>{'Content-Type': 'application/json'},
+            body: jsonEncode(<String, dynamic>{
+              'systemInstruction': <String, dynamic>{
+                'parts': <Map<String, String>>[
+                  {'text': system},
+                ],
+              },
+              'contents': <Map<String, dynamic>>[
+                {
+                  'parts': <Map<String, String>>[
+                    {'text': user},
+                  ],
+                },
+              ],
+              'generationConfig': <String, dynamic>{'temperature': 0.5},
+            }),
+          )
+          .timeout(_timeout);
+      if (resp.statusCode != 200) return null;
+      final Map<String, dynamic> data =
+          jsonDecode(resp.body) as Map<String, dynamic>;
+      final Object? candidates = data['candidates'];
+      final Object? first =
+          (candidates is List && candidates.isNotEmpty) ? candidates.first : null;
+      final Object? content = (first is Map) ? first['content'] : null;
+      final Object? parts = (content is Map) ? content['parts'] : null;
+      final Object? part = (parts is List && parts.isNotEmpty) ? parts.first : null;
+      final Object? text = (part is Map) ? part['text'] : null;
+      return text is String ? text.trim() : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   String _buildPrompt({
     required List<double> recentScores,
     required String game,
