@@ -1,11 +1,11 @@
 {
-    "name": "cognicare_ner",
-    "short_name": "cognicare_ner",
+    "name": "NAWAL",
+    "short_name": "NAWAL",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#2E5AAC",
+    "theme_color": "#2E5AAC",
+    "description": "NAWAL — giving a new life: a dementia-care companion.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
