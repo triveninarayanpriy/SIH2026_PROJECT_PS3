@@ -276,7 +276,8 @@ class DemoSeeder {
     final bool hasAlert = LocalDb.allAlerts()
         .any((a) => a.patientId == _pid && !a.seen);
 
-    await LocalDb.putSetting('doctorRows_${DemoMode.doctorUid}', <Map<String, dynamic>>[
+    // Kamala Devi — the real, fully-seeded patient (from LocalDb).
+    final List<Map<String, dynamic>> rows = <Map<String, dynamic>>[
       DoctorPatientRow(
         id: _pid,
         name: 'Kamala Devi',
@@ -284,8 +285,7 @@ class DemoSeeder {
         lastActive: lastActive,
         hasAlert: hasAlert,
       ).toMap(),
-    ]);
-
+    ];
     await LocalDb.putSetting('doctorDetail_$_pid', <String, dynamic>{
       'profile': LocalDb.getProfile(_pid)?.toMap(),
       'sessions': LocalDb.sessionsForPatient(_pid).map((s) => s.toMap()).toList(),
@@ -293,5 +293,104 @@ class DemoSeeder {
           LocalDb.allAlerts().where((a) => a.patientId == _pid).map((a) => a.toMap()).toList(),
       'dailyCare': LocalDb.allDailyCare().map((c) => c.toMap()).toList(),
     });
+
+    // Two more patients so the doctor list shows the full triage range.
+    rows.add(_syntheticPatient(
+      id: 'PT-1033',
+      name: 'Rameshwar Sen',
+      age: 81,
+      stage: 3,
+      region: 'Kolkata',
+      baseAccuracy: 0.60, // -> amber "Watch"
+      lastActiveDaysAgo: 1,
+    ));
+    rows.add(_syntheticPatient(
+      id: 'PT-1088',
+      name: 'Anandi Bai',
+      age: 69,
+      stage: 1,
+      region: 'Pune',
+      baseAccuracy: 0.90, // -> green "Stable"
+      lastActiveDaysAgo: 0,
+    ));
+
+    await LocalDb.putSetting('doctorRows_${DemoMode.doctorUid}', rows);
+  }
+
+  /// Builds a synthetic doctor patient (row + cached detail) for the demo list.
+  /// Writes the detail cache and returns the row map.
+  static Map<String, dynamic> _syntheticPatient({
+    required String id,
+    required String name,
+    required int age,
+    required int stage,
+    required String region,
+    required double baseAccuracy,
+    required int lastActiveDaysAgo,
+  }) {
+    final DateTime now = DateTime.now();
+    const List<List<String>> games = <List<String>>[
+      <String>['pattern', 'attention'],
+      <String>['faces', 'memory'],
+      <String>['voice', 'auditory'],
+      <String>['name_completion', 'language'],
+      <String>['routine', 'executive'],
+    ];
+    final List<Map<String, dynamic>> sessions = <Map<String, dynamic>>[];
+    int seq = 0;
+    for (int day = 18; day >= 1; day -= 3) {
+      for (final List<String> g in games) {
+        // Small deterministic wobble around the base accuracy.
+        final double jitter = ((seq * 37) % 20 - 10) / 100.0;
+        final double acc = (baseAccuracy + jitter).clamp(0.1, 1.0);
+        final int correct = (acc * 5).round().clamp(0, 5);
+        sessions.add(GameResult(
+          id: '$id-s${seq++}',
+          patientId: id,
+          game: g[0],
+          domain: g[1],
+          correct: correct,
+          total: 5,
+          durationMs: 30000 + (seq * 211) % 40000,
+          difficulty: stage,
+          at: now.subtract(Duration(days: day, hours: seq % 10)),
+        ).toMap());
+      }
+    }
+    final List<Map<String, dynamic>> care = <Map<String, dynamic>>[];
+    for (int d = 0; d < 7; d++) {
+      final DateTime day = now.subtract(Duration(days: d));
+      final bool good = baseAccuracy > 0.7;
+      care.add(DailyCare(
+        date:
+            '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}',
+        medsTaken: good || d.isEven ? const <String>['morning', 'evening'] : const <String>['morning'],
+        hydrationCount: good ? 6 : 4,
+        mealsLogged: good ? const <String>['breakfast', 'lunch', 'dinner'] : const <String>['breakfast', 'lunch'],
+      ).toMap());
+    }
+
+    LocalDb.putSetting('doctorDetail_$id', <String, dynamic>{
+      'profile': PatientProfile(
+        id: id,
+        name: name,
+        age: age,
+        stage: stage,
+        languages: const <String>['English'],
+        region: region,
+        createdAt: now.subtract(const Duration(days: 60)),
+      ).toMap(),
+      'sessions': sessions,
+      'alerts': const <Map<String, dynamic>>[],
+      'dailyCare': care,
+    });
+
+    return DoctorPatientRow(
+      id: id,
+      name: name,
+      stage: stage,
+      lastActive: now.subtract(Duration(days: lastActiveDaysAgo, hours: 2)),
+      hasAlert: false,
+    ).toMap();
   }
 }

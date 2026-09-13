@@ -11,7 +11,10 @@ import 'routine_config_screen.dart';
 /// Hub for the four personalised games' content. Family Name Completion reuses
 /// the Family Media faces; the other three have dedicated editors here.
 class GamesContentScreen extends StatelessWidget {
-  const GamesContentScreen({super.key});
+  const GamesContentScreen({super.key, this.embedded = false});
+
+  /// When embedded in a tab, render the body only (no Scaffold/AppBar).
+  final bool embedded;
 
   void _open(BuildContext context, Widget screen) {
     Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
@@ -19,11 +22,9 @@ class GamesContentScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Personalise games')),
-      body: ListView(
-        padding: const EdgeInsets.all(AppTheme.screenPadding),
-        children: <Widget>[
+    final Widget body = ListView(
+      padding: const EdgeInsets.all(AppTheme.screenPadding),
+      children: <Widget>[
           Text('These games use content you add, so every session feels personal.',
               style: AppText.body(color: AppColors.textMuted)),
           const SizedBox(height: 16),
@@ -69,8 +70,13 @@ class GamesContentScreen extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
+      );
+    return embedded
+        ? body
+        : Scaffold(
+            appBar: AppBar(title: const Text('Personalise games')),
+            body: body,
+          );
   }
 
   Widget _tile(

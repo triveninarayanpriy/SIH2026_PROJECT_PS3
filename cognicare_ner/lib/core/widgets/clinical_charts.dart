@@ -75,12 +75,14 @@ class CompositeTrendChart extends StatelessWidget {
     this.alerts = const <Alert>[],
     this.days = 30,
     this.height = 220,
+    this.color = AppColors.primary,
   });
 
   final List<GameResult> sessions;
   final List<Alert> alerts;
   final int days;
   final double height;
+  final Color color;
 
   List<FlSpot> _spots() {
     final DateTime now = DateTime.now();
@@ -194,13 +196,13 @@ class CompositeTrendChart extends StatelessWidget {
               isCurved: true,
               curveSmoothness: 0.35,
               preventCurveOverShooting: true,
-              color: AppColors.primary,
+              color: color,
               barWidth: 3,
               isStrokeCapRound: true,
               dotData: const FlDotData(show: false),
               belowBarData: BarAreaData(
                 show: true,
-                color: AppColors.primary.withValues(alpha: 0.15),
+                color: color.withValues(alpha: 0.15),
               ),
             ),
           ],
@@ -263,6 +265,74 @@ class DomainRadarChart extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Medication / hydration / meal adherence as three labelled % bars (last
+/// [days]). Matches the clinical reference layout.
+class AdherenceBars extends StatelessWidget {
+  const AdherenceBars({super.key, required this.care, this.days = 7});
+
+  final List<DailyCare> care;
+  final int days;
+
+  ({double meds, double water, double meals}) _rates() {
+    final DateTime now = DateTime.now();
+    final DateTime start = DateTime(now.year, now.month, now.day)
+        .subtract(Duration(days: days - 1));
+    final List<DailyCare> recent =
+        care.where((c) => (DateTime.tryParse(c.date) ?? DateTime(2000)).isAfter(start.subtract(const Duration(days: 1)))).toList();
+    if (recent.isEmpty) return (meds: 0, water: 0, meals: 0);
+    double m = 0, w = 0, f = 0;
+    for (final DailyCare c in recent) {
+      m += (c.medsTaken.length / 2).clamp(0, 1);
+      w += (c.hydrationCount / 6).clamp(0, 1);
+      f += (c.mealsLogged.length / 3).clamp(0, 1);
+    }
+    return (meds: m / recent.length, water: w / recent.length, meals: f / recent.length);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ({double meds, double water, double meals}) r = _rates();
+    return Column(
+      children: <Widget>[
+        _bar('Medication', r.meds, AppColors.primary, Icons.medication_rounded),
+        const SizedBox(height: 12),
+        _bar('Hydration', r.water, const Color(0xFF0284C7), Icons.water_drop_rounded),
+        const SizedBox(height: 12),
+        _bar('Meals', r.meals, AppColors.success, Icons.restaurant_rounded),
+      ],
+    );
+  }
+
+  Widget _bar(String label, double v, Color color, IconData icon) {
+    final int pct = (v * 100).round();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 6),
+            Text(label, style: AppText.body().copyWith(fontSize: 13, fontWeight: FontWeight.w600)),
+            const Spacer(),
+            Text('$pct%',
+                style: AppText.body().copyWith(fontSize: 13, fontWeight: FontWeight.w800, color: color)),
+          ],
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: LinearProgressIndicator(
+            value: v,
+            minHeight: 8,
+            backgroundColor: AppColors.border.withValues(alpha: 0.5),
+            valueColor: AlwaysStoppedAnimation<Color>(color),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -5,64 +5,27 @@ import '../../core/models/alert.dart';
 import '../../core/models/daily_care.dart';
 import '../../core/models/game_result.dart';
 import '../../core/services/local_db.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/services/caregiver_note_service.dart' show kDomainLabels;
 import '../../core/theme/app_text.dart';
 import '../../core/widgets/care_note_card.dart';
 import '../../core/widgets/clinical_charts.dart';
-import '../../core/widgets/domain_trend_chart.dart';
 import '../../core/services/pdf_report_service.dart';
 import 'doctor_repository.dart';
 
-/// Full 5-domain series for the doctor trend chart.
-const List<DomainSeries> _doctorSeries = <DomainSeries>[
-  DomainSeries('memory', 'Memory', AppColors.primary),
-  DomainSeries('attention', 'Attention', AppColors.secondary),
-  DomainSeries('auditory', 'Listening', AppColors.success),
-  DomainSeries('language', 'Language', Color(0xFF8E44AD)),
-  DomainSeries('executive', 'Sequencing', Color(0xFFE67E22)),
-];
+const Color kClinicalTeal = Color(0xFF0D5C75);
+const Color kClinicalRed = Color(0xFFD64545);
+const Color kClinicalBg = Color(0xFFF1F5F9);
 
-const Color _clinicalRed = Color(0xFFD64545);
-
-class _MedicalCard extends StatelessWidget {
-  final Widget child;
-  final EdgeInsetsGeometry padding;
-
-  const _MedicalCard({required this.child, this.padding = const EdgeInsets.all(24)});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: padding,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 15,
-            offset: const Offset(0, 4),
-          ),
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-        border: Border.all(color: Colors.grey.withOpacity(0.1), width: 1),
-      ),
-      child: child,
-    );
-  }
-}
-
-/// Read-only doctor view of one patient: 30-day per-domain trends, a recent
-/// sessions table, daily-care summary, and alert history. Cached for offline.
+/// Read-only clinical view of one patient — teal medical theme with a triage
+/// header, AI clinical note, anomaly alerts, composite score trend, domain
+/// radar, adherence bars, and a sessions table. Cached for offline use.
 class DoctorPatientDetail extends StatefulWidget {
-  const DoctorPatientDetail({super.key, required this.patientId});
+  const DoctorPatientDetail({super.key, required this.patientId, this.embedded = false});
 
   final String patientId;
+
+  /// When embedded in the wide two-pane list, drop the Scaffold/AppBar.
+  final bool embedded;
 
   @override
   State<DoctorPatientDetail> createState() => _DoctorPatientDetailState();
@@ -72,6 +35,18 @@ class _DoctorPatientDetailState extends State<DoctorPatientDetail> {
   DoctorPatientData? _data;
   bool _loading = true;
   String? _error;
+  String _sortColumn = 'date';
+  bool _sortAsc = false;
+
+  @override
+  void didUpdateWidget(covariant DoctorPatientDetail old) {
+    super.didUpdateWidget(old);
+    if (old.patientId != widget.patientId) {
+      _data = DoctorRepository.cachedDetail(widget.patientId);
+      _loading = _data == null;
+      _refresh();
+    }
+  }
 
   @override
   void initState() {
@@ -83,24 +58,22 @@ class _DoctorPatientDetailState extends State<DoctorPatientDetail> {
 
   Future<void> _refresh() async {
     try {
-      DoctorPatientData d =
-          await DoctorRepository.fetchDetail(widget.patientId);
-          
-      // Demo fallback: if firebase fetch returns 0 sessions, try local
+      DoctorPatientData d = await DoctorRepository.fetchDetail(widget.patientId);
       if (d.sessions.isEmpty) {
-        final localSessions = LocalDb.sessionsForPatient(widget.patientId);
-        final localAlerts = LocalDb.allAlerts().where((a) => a.patientId == widget.patientId).toList();
-        final localDailyCare = LocalDb.allDailyCare().where((dc) => true).toList(); // Simplified for demo
-        if (localSessions.isNotEmpty) {
-           d = DoctorPatientData(
-             profile: d.profile,
-             sessions: localSessions,
-             alerts: localAlerts.isNotEmpty ? localAlerts : d.alerts,
-             dailyCare: localDailyCare.isNotEmpty ? localDailyCare : d.dailyCare,
-           );
+        // Fall back to local sessions (same-device demo)…
+        final local = LocalDb.sessionsForPatient(widget.patientId);
+        if (local.isNotEmpty) {
+          d = DoctorPatientData(
+            profile: d.profile ?? LocalDb.getProfile(widget.patientId),
+            sessions: local,
+            alerts: LocalDb.allAlerts().where((a) => a.patientId == widget.patientId).toList(),
+            dailyCare: LocalDb.allDailyCare().toList(),
+          );
+        } else if (_data != null && _data!.sessions.isNotEmpty) {
+          // …otherwise keep the cached detail rather than blanking it.
+          d = _data!;
         }
       }
-
       if (!mounted) return;
       setState(() {
         _data = d;
@@ -109,18 +82,7 @@ class _DoctorPatientDetailState extends State<DoctorPatientDetail> {
       });
     } catch (_) {
       if (!mounted) return;
-      DoctorPatientData? localD;
-      final localSessions = LocalDb.sessionsForPatient(widget.patientId);
-      if (_data == null && localSessions.isNotEmpty) {
-        localD = DoctorPatientData(
-          profile: null,
-          sessions: localSessions,
-          alerts: const [],
-          dailyCare: const [],
-        );
-      }
       setState(() {
-        if (localD != null) _data = localD;
         _error = 'Offline — showing cached data.';
         _loading = false;
       });
@@ -136,14 +98,59 @@ class _DoctorPatientDetailState extends State<DoctorPatientDetail> {
   @override
   Widget build(BuildContext context) {
     final DoctorPatientData? d = _data;
+    final Widget body = (_loading && d == null)
+        ? const Center(child: CircularProgressIndicator())
+        : SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                if (_error != null) ...<Widget>[
+                  _offlineChip(_error!),
+                  const SizedBox(height: 12),
+                ],
+                _hero(d),
+                const SizedBox(height: 16),
+                CareNoteCard(patientId: widget.patientId, clinical: true),
+                const SizedBox(height: 16),
+                _alertsPanel(d),
+                const SizedBox(height: 16),
+                LayoutBuilder(
+                  builder: (context, c) {
+                    final bool wide = c.maxWidth > 720;
+                    final Widget trend = _compositeCard(d);
+                    final Widget radar = _radarCard(d);
+                    if (wide) {
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          Expanded(flex: 7, child: trend),
+                          const SizedBox(width: 16),
+                          Expanded(flex: 5, child: radar),
+                        ],
+                      );
+                    }
+                    return Column(children: <Widget>[trend, const SizedBox(height: 16), radar]);
+                  },
+                ),
+                const SizedBox(height: 16),
+                _adherenceCard(d),
+                const SizedBox(height: 16),
+                _sessionsCard(d),
+                const SizedBox(height: 24),
+              ],
+            ),
+          );
+
+    if (widget.embedded) return Container(color: kClinicalBg, child: body);
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC), // Professional clinical background
+      backgroundColor: kClinicalBg,
       appBar: AppBar(
         title: Text(d?.profile?.name ?? 'Patient'),
-        elevation: 0,
         backgroundColor: Colors.white,
-        foregroundColor: AppColors.text,
-        actions: [
+        foregroundColor: kClinicalTeal,
+        elevation: 0,
+        actions: <Widget>[
           IconButton(
             tooltip: 'Refresh',
             icon: const Icon(Icons.refresh_rounded),
@@ -151,114 +158,99 @@ class _DoctorPatientDetailState extends State<DoctorPatientDetail> {
           ),
         ],
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 960),
-          child: (_loading && d == null)
-              ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (_error != null) ...[
-                        Row(children: [
-                          const Icon(Icons.cloud_off_rounded,
-                              size: 18, color: AppColors.textMuted),
-                          const SizedBox(width: 8),
-                          Text(_error!,
-                              style: _t(14, color: AppColors.textMuted)),
-                        ]),
-                        const SizedBox(height: 12),
-                      ],
-                      _header(d),
-                      const SizedBox(height: 16),
-                      CareNoteCard(patientId: widget.patientId, clinical: true),
-                      const SizedBox(height: 16),
-                      _compositeCard(d),
-                      const SizedBox(height: 16),
-                      _radarCard(d),
-                      const SizedBox(height: 16),
-                      _trendCard(d),
-                      const SizedBox(height: 16),
-                      _alertsCard(d),
-                      const SizedBox(height: 16),
-                      _sessionsCard(d),
-                      const SizedBox(height: 16),
-                      _careCard(d),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
-                ),
-        ),
-      ),
+      body: body,
     );
   }
 
-  Widget _header(DoctorPatientData? d) {
+  // ---- Cards -------------------------------------------------------------
+  Widget _card({required Widget child, EdgeInsets padding = const EdgeInsets.all(20)}) {
+    return Container(
+      width: double.infinity,
+      padding: padding,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: <BoxShadow>[
+          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 3)),
+        ],
+      ),
+      child: child,
+    );
+  }
+
+  Widget _offlineChip(String text) => Row(children: <Widget>[
+        const Icon(Icons.cloud_off_rounded, size: 16, color: Color(0xFF64748B)),
+        const SizedBox(width: 6),
+        Text(text, style: _t(13, color: const Color(0xFF64748B))),
+      ]);
+
+  Widget _hero(DoctorPatientData? d) {
     final String name = d?.profile?.name ?? widget.patientId;
-    final String sub = d?.profile == null
-        ? 'Code ${widget.patientId}'
-        : 'Age ${d!.profile!.age}  ·  Stage ${d.profile!.stage}  ·  '
-            '${d.profile!.region}  ·  ${d.profile!.id}';
     final List<GameResult> sessions = d?.sessions ?? const <GameResult>[];
-    final bool hasAlert = (d?.alerts ?? const <Alert>[])
-        .any((a) => a.type == 'cognitive_drop');
+    final bool hasAlert =
+        (d?.alerts ?? const <Alert>[]).any((a) => a.type == 'cognitive_drop');
     final Triage triage = triageFor(sessions, hasAlert: hasAlert);
     final double? composite = compositeScore(sessions);
-    return _MedicalCard(
+    final String initials = name.trim().isEmpty
+        ? '?'
+        : name.trim().split(RegExp(r'\s+')).take(2).map((w) => w[0]).join().toUpperCase();
+
+    final String meta = d?.profile == null
+        ? 'Code ${widget.patientId}'
+        : '${widget.patientId}  ·  ${d!.profile!.age}y  ·  Stage ${d.profile!.stage}  ·  ${d.profile!.region}';
+
+    return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        children: <Widget>[
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            children: <Widget>[
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: kClinicalTeal.withValues(alpha: 0.1),
+                child: Text(initials,
+                    style: _t(18, color: kClinicalTeal, weight: FontWeight.w800)),
+              ),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(name, style: _t(28, weight: FontWeight.w700)),
-                    const SizedBox(height: 8),
-                    Text(sub, style: _t(16, color: AppColors.textMuted)),
+                  children: <Widget>[
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 10,
+                      runSpacing: 6,
+                      children: <Widget>[
+                        Text(name, style: _t(24, weight: FontWeight.w800)),
+                        _triageBadge(triage),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(meta, style: _t(14, color: const Color(0xFF64748B))),
                   ],
                 ),
               ),
-              _triageChip(triage, composite),
             ],
           ),
-          const SizedBox(height: 24),
-          const Divider(height: 1, color: Color(0xFFEEEEEE)),
           const SizedBox(height: 16),
           Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.primarySoft,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.print_rounded, size: 24, color: AppColors.primary),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Generate Clinical Report', style: _t(18, weight: FontWeight.w600)),
-                    const SizedBox(height: 2),
-                    Text('Download PDF summary.',
-                        style: _t(14, color: AppColors.textMuted)),
-                  ],
-                ),
-              ),
-              FilledButton(
-                onPressed: (d == null) ? null : _download,
+            children: <Widget>[
+              if (composite != null) ...<Widget>[
+                _stat('Composite', '${(composite * 100).round()}', '/100', triage.color),
+                const SizedBox(width: 12),
+              ],
+              _stat('Sessions', '${sessions.length}', '', kClinicalTeal),
+              const Spacer(),
+              FilledButton.icon(
+                onPressed: d == null ? null : _download,
+                icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
+                label: const Text('Weekly report'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  backgroundColor: kClinicalTeal,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                 ),
-                child: Text('Print', style: _t(16, color: Colors.white, weight: FontWeight.w600)),
               ),
             ],
           ),
@@ -267,184 +259,280 @@ class _DoctorPatientDetailState extends State<DoctorPatientDetail> {
     );
   }
 
-  Widget _triageChip(Triage triage, double? composite) {
+  Widget _stat(String label, String value, String suffix, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: triage.color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: triage.color.withValues(alpha: 0.5)),
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(color: triage.color, shape: BoxShape.circle),
-          ),
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        children: <Widget>[
+          Text(value, style: _t(20, color: color, weight: FontWeight.w800)),
+          if (suffix.isNotEmpty) Text(suffix, style: _t(12, color: color)),
           const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(triage.label,
-                  style: _t(15, color: triage.color, weight: FontWeight.w700)),
-              if (composite != null)
-                Text('Composite ${(composite * 100).round()}%',
-                    style: _t(12, color: AppColors.textMuted)),
-            ],
+          Text(label, style: _t(12, color: const Color(0xFF64748B))),
+        ],
+      ),
+    );
+  }
+
+  Widget _triageBadge(Triage t) {
+    final String label = switch (t) {
+      Triage.red => 'Decline alert',
+      Triage.amber => 'Monitoring',
+      Triage.green => 'Stable',
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: t.color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: t.color.withValues(alpha: 0.5)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: <Widget>[
+        Container(width: 8, height: 8, decoration: BoxDecoration(color: t.color, shape: BoxShape.circle)),
+        const SizedBox(width: 6),
+        Text(label.toUpperCase(), style: _t(11, color: t.color, weight: FontWeight.w800)),
+      ]),
+    );
+  }
+
+  Widget _alertsPanel(DoctorPatientData? d) {
+    final List<Alert> drops = (d?.alerts ?? const <Alert>[])
+        .where((a) => a.type == 'cognitive_drop')
+        .toList()
+      ..sort((a, b) => b.at.compareTo(a.at));
+    if (drops.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFECFDF5),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFA7F3D0)),
+        ),
+        child: Row(children: <Widget>[
+          const Icon(Icons.check_circle_rounded, color: Color(0xFF059669)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text('No anomaly flags. Baseline stability maintained.',
+                style: _t(14, color: const Color(0xFF065F46), weight: FontWeight.w600)),
           ),
+        ]),
+      );
+    }
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF2F2),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFFECACA)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(children: <Widget>[
+            const Icon(Icons.warning_amber_rounded, color: kClinicalRed),
+            const SizedBox(width: 8),
+            Text('Clinical anomaly alerts', style: _t(14, color: const Color(0xFF991B1B), weight: FontWeight.w800)),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(color: kClinicalRed, borderRadius: BorderRadius.circular(999)),
+              child: Text('${drops.length}', style: _t(11, color: Colors.white, weight: FontWeight.w800)),
+            ),
+          ]),
+          const SizedBox(height: 8),
+          for (final Alert a in drops.take(6))
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                      color: kClinicalRed.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
+                  child: Text((kDomainLabels[a.domain] ?? a.domain).toUpperCase(),
+                      style: _t(10, color: const Color(0xFF991B1B), weight: FontWeight.w800)),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+                    Text('${a.deltaPct.toStringAsFixed(0)}% decline over ~2 weeks — review suggested.',
+                        style: _t(14, weight: FontWeight.w600)),
+                    Text(DateFormat('MMM d, y').format(a.at),
+                        style: _t(12, color: const Color(0xFF64748B))),
+                  ]),
+                ),
+              ]),
+            ),
         ],
       ),
     );
   }
 
   Widget _compositeCard(DoctorPatientData? d) {
-    return _MedicalCard(
+    final List<GameResult> sessions = d?.sessions ?? const <GameResult>[];
+    final double? comp = compositeScore(sessions);
+    final double? comp30ago = compositeScore(
+        sessions.where((s) => s.at.isBefore(DateTime.now().subtract(const Duration(days: 25)))).toList());
+    final double? delta = (comp != null && comp30ago != null) ? (comp - comp30ago) * 100 : null;
+    return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Composite cognitive score — last 30 days',
-              style: _t(20, weight: FontWeight.w600)),
-          const SizedBox(height: 6),
-          Text('Mean accuracy across all domains; the dashed line marks the '
-              'anomaly change-point.',
-              style: _t(13, color: AppColors.textMuted)),
-          const SizedBox(height: 20),
-          CompositeTrendChart(
-            sessions: d?.sessions ?? const <GameResult>[],
-            alerts: d?.alerts ?? const <Alert>[],
+        children: <Widget>[
+          Text('Composite cognitive score', style: _t(16, weight: FontWeight.w800)),
+          const SizedBox(height: 4),
+          Text(
+            comp == null
+                ? 'Score 0–100 across all domains'
+                : 'Current ${(comp * 100).round()}/100'
+                    '${delta != null ? '  ·  ${delta >= 0 ? '+' : ''}${delta.round()} pt over 30 days' : ''}',
+            style: _t(13, color: delta != null && delta < -5 ? kClinicalRed : const Color(0xFF64748B)),
           ),
+          const SizedBox(height: 16),
+          CompositeTrendChart(sessions: sessions, alerts: d?.alerts ?? const <Alert>[], color: kClinicalTeal),
         ],
       ),
     );
   }
 
   Widget _radarCard(DoctorPatientData? d) {
-    return _MedicalCard(
+    final List<GameResult> sessions = d?.sessions ?? const <GameResult>[];
+    final Map<String, double> avgs = domainAverages(sessions);
+    return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Cognitive domain profile', style: _t(20, weight: FontWeight.w600)),
-          const SizedBox(height: 20),
-          Center(
-            child: DomainRadarChart(sessions: d?.sessions ?? const <GameResult>[]),
+        children: <Widget>[
+          Text('Cognitive domain profile', style: _t(16, weight: FontWeight.w800)),
+          const SizedBox(height: 12),
+          Center(child: DomainRadarChart(sessions: sessions, color: kClinicalTeal, size: 220)),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: <Widget>[
+              for (final String dm in kAllDomains)
+                if (avgs.containsKey(dm)) _domainPill(dm, avgs[dm]!),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _trendCard(DoctorPatientData? d) {
-    return _MedicalCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Per-domain accuracy — last 30 days',
-              style: _t(20, weight: FontWeight.w600)),
-          const SizedBox(height: 20),
-          DomainTrendChart(
-            sessions: d?.sessions ?? const <GameResult>[],
-            series: _doctorSeries,
-          ),
-        ],
+  Widget _domainPill(String domain, double v) {
+    final int pct = (v * 100).round();
+    final bool low = pct < 60;
+    final Color c = low ? kClinicalRed : kClinicalTeal;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: c.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: c.withValues(alpha: 0.25)),
       ),
+      child: Text('${kDomainLabels[domain] ?? domain}  $pct%',
+          style: _t(12, color: c, weight: FontWeight.w700)),
     );
   }
 
-  Widget _alertsCard(DoctorPatientData? d) {
-    final List<Alert> drops = (d?.alerts ?? const <Alert>[])
-        .where((a) => a.type == 'cognitive_drop')
-        .toList()
-      ..sort((a, b) => b.at.compareTo(a.at));
-    return _MedicalCard(
+  Widget _adherenceCard(DoctorPatientData? d) {
+    final List<DailyCare> care = d?.dailyCare ?? const <DailyCare>[];
+    return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Alert history', style: _t(20, weight: FontWeight.w600)),
+        children: <Widget>[
+          Row(children: <Widget>[
+            const Icon(Icons.task_alt_rounded, size: 18, color: kClinicalTeal),
+            const SizedBox(width: 8),
+            Text('Weekly routine adherence', style: _t(16, weight: FontWeight.w800)),
+          ]),
           const SizedBox(height: 16),
-          if (drops.isEmpty)
-            Text('No cognitive-drop alerts.',
-                style: _t(15, color: AppColors.textMuted))
+          if (care.isEmpty)
+            Text('No care logs yet.', style: _t(14, color: const Color(0xFF64748B)))
           else
-            for (final Alert a in drops.take(10))
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: _clinicalRed.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(Icons.warning_amber_rounded,
-                          size: 24, color: _clinicalRed),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${_domainLabel(a.domain)}: '
-                            '${a.deltaPct.toStringAsFixed(0)}% decline',
-                            style: _t(16, weight: FontWeight.w600),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${DateFormat('MMM d, y').format(a.at)}  ·  Possible progression — clinical review suggested.',
-                            style: _t(14, color: AppColors.textMuted),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            AdherenceBars(care: care),
         ],
       ),
     );
   }
 
   Widget _sessionsCard(DoctorPatientData? d) {
-    final List<GameResult> sessions =
-        List<GameResult>.of(d?.sessions ?? const <GameResult>[])
-          ..sort((a, b) => b.at.compareTo(a.at));
-    return _MedicalCard(
+    final List<GameResult> sessions = List<GameResult>.of(d?.sessions ?? const <GameResult>[]);
+    sessions.sort((a, b) {
+      int cmp;
+      switch (_sortColumn) {
+        case 'game':
+          cmp = a.game.compareTo(b.game);
+          break;
+        case 'domain':
+          cmp = a.domain.compareTo(b.domain);
+          break;
+        case 'accuracy':
+          cmp = a.accuracy.compareTo(b.accuracy);
+          break;
+        case 'difficulty':
+          cmp = a.difficulty.compareTo(b.difficulty);
+          break;
+        default:
+          cmp = a.at.compareTo(b.at);
+      }
+      return _sortAsc ? cmp : -cmp;
+    });
+
+    void onSort(String col) => setState(() {
+          if (_sortColumn == col) {
+            _sortAsc = !_sortAsc;
+          } else {
+            _sortColumn = col;
+            _sortAsc = false;
+          }
+        });
+
+    return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Recent sessions', style: _t(20, weight: FontWeight.w600)),
-          const SizedBox(height: 16),
+        children: <Widget>[
+          Row(children: <Widget>[
+            Text('Recent game sessions', style: _t(16, weight: FontWeight.w800)),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(6)),
+              child: Text('${sessions.length}', style: _t(12, color: const Color(0xFF64748B), weight: FontWeight.w700)),
+            ),
+          ]),
+          const SizedBox(height: 12),
           if (sessions.isEmpty)
-            Text('No sessions recorded yet.',
-                style: _t(15, color: AppColors.textMuted))
+            Text('No sessions recorded yet.', style: _t(14, color: const Color(0xFF64748B)))
           else
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: DataTable(
-                headingTextStyle:
-                    _t(14, color: AppColors.textMuted, weight: FontWeight.w600),
-                dataTextStyle: _t(15),
-                columnSpacing: 32,
-                columns: const [
-                  DataColumn(label: Text('Game')),
-                  DataColumn(label: Text('Domain')),
-                  DataColumn(label: Text('Accuracy'), numeric: true),
-                  DataColumn(label: Text('Level'), numeric: true),
-                  DataColumn(label: Text('When')),
+                headingRowColor: WidgetStatePropertyAll<Color>(const Color(0xFFF8FAFC)),
+                headingTextStyle: _t(13, color: const Color(0xFF475569), weight: FontWeight.w700),
+                dataTextStyle: _t(14),
+                columnSpacing: 26,
+                sortColumnIndex: <String>['game', 'domain', 'accuracy', 'difficulty', 'date'].indexOf(_sortColumn),
+                sortAscending: _sortAsc,
+                columns: <DataColumn>[
+                  DataColumn(label: const Text('Game'), onSort: (_, __) => onSort('game')),
+                  DataColumn(label: const Text('Domain'), onSort: (_, __) => onSort('domain')),
+                  DataColumn(label: const Text('Accuracy'), numeric: true, onSort: (_, __) => onSort('accuracy')),
+                  DataColumn(label: const Text('Level'), numeric: true, onSort: (_, __) => onSort('difficulty')),
+                  DataColumn(label: const Text('When'), onSort: (_, __) => onSort('date')),
                 ],
-                rows: [
-                  for (final GameResult s in sessions.take(15))
-                    DataRow(cells: [
-                      DataCell(Text(s.game)),
-                      DataCell(Text(_domainLabel(s.domain))),
-                      DataCell(Text('${(s.accuracy * 100).round()}%', style: _t(15, weight: FontWeight.w600))),
-                      DataCell(Text('${s.difficulty}')),
-                      DataCell(
-                          Text(DateFormat('MMM d, h:mm a').format(s.at))),
+                rows: <DataRow>[
+                  for (final GameResult s in sessions.take(20))
+                    DataRow(cells: <DataCell>[
+                      DataCell(Text(_gameLabel(s.game))),
+                      DataCell(_domainTag(s.domain)),
+                      DataCell(_accuracyPill(s.accuracy)),
+                      DataCell(_difficultyDots(s.difficulty)),
+                      DataCell(Text(DateFormat('MMM d, h:mm a').format(s.at),
+                          style: _t(13, color: const Color(0xFF64748B)))),
                     ]),
                 ],
               ),
@@ -454,71 +542,60 @@ class _DoctorPatientDetailState extends State<DoctorPatientDetail> {
     );
   }
 
-  Widget _careCard(DoctorPatientData? d) {
-    final List<DailyCare> care =
-        List<DailyCare>.of(d?.dailyCare ?? const <DailyCare>[])
-          ..sort((a, b) => b.date.compareTo(a.date));
-    return _MedicalCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Daily care', style: _t(20, weight: FontWeight.w600)),
-          const SizedBox(height: 16),
-          if (care.isEmpty)
-            Text('No care logs yet.',
-                style: _t(15, color: AppColors.textMuted))
-          else ...[
-            Text('Adherence — last 7 days',
-                style: _t(14, color: AppColors.textMuted, weight: FontWeight.w600)),
-            const SizedBox(height: 8),
-            AdherenceStrip(care: care),
-            const SizedBox(height: 20),
-            for (final DailyCare c in care.take(7))
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(c.date, style: _t(16, weight: FontWeight.w500)),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        'Meds ${c.medsTaken.length} · Water ${c.hydrationCount} · '
-                        'Meals ${c.mealsLogged.length}',
-                        style: _t(14, color: AppColors.textMuted),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ],
-      ),
+  Widget _domainTag(String d) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(color: kClinicalTeal.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(6)),
+        child: Text(kDomainLabels[d] ?? d, style: _t(11, color: kClinicalTeal, weight: FontWeight.w700)),
+      );
+
+  Widget _accuracyPill(double a) {
+    final int pct = (a * 100).round();
+    final bool low = pct < 55;
+    final Color c = low ? kClinicalRed : const Color(0xFF059669);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(color: c.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+      child: Text('$pct%', style: _t(13, color: c, weight: FontWeight.w800)),
     );
   }
 
-  String _domainLabel(String d) {
-    switch (d) {
-      case 'memory':
-        return 'Memory';
-      case 'attention':
-        return 'Attention';
-      case 'auditory':
-        return 'Listening';
-      case 'language':
-        return 'Language';
-      case 'executive':
-        return 'Sequencing';
+  Widget _difficultyDots(int level) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          for (int i = 1; i <= 5; i++)
+            Container(
+              width: 7,
+              height: 7,
+              margin: const EdgeInsets.symmetric(horizontal: 1.5),
+              decoration: BoxDecoration(
+                color: i <= level ? kClinicalTeal : const Color(0xFFE2E8F0),
+                shape: BoxShape.circle,
+              ),
+            ),
+        ],
+      );
+
+  String _gameLabel(String g) {
+    switch (g) {
+      case 'pattern':
+        return 'Pattern Match';
+      case 'faces':
+        return 'Family Faces';
+      case 'voice':
+        return 'Voice Recognition';
+      case 'name_completion':
+        return 'Name Completion';
+      case 'milestone':
+        return 'Milestone Recall';
+      case 'routine':
+        return 'Routine Sequencing';
+      case 'objects':
+        return 'Object ID';
       default:
-        return d;
+        return g;
     }
   }
 
   TextStyle _t(double size, {Color? color, FontWeight? weight}) =>
-      AppText.body(color: color)
-          .copyWith(fontSize: size, fontWeight: weight ?? FontWeight.w400);
+      AppText.body(color: color).copyWith(fontSize: size, fontWeight: weight ?? FontWeight.w400);
 }

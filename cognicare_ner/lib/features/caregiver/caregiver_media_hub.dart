@@ -17,6 +17,7 @@ import '../../core/widgets/big_button.dart';
 import '../../core/widgets/big_card.dart';
 import '../../core/widgets/platform_media.dart';
 import '../../core/widgets/voice_recorder_widget.dart';
+import 'games_content_screen.dart';
 import 'photo_viewer_screen.dart';
 
 class CaregiverMediaHub extends StatefulWidget {
@@ -36,7 +37,7 @@ class _CaregiverMediaHubState extends State<CaregiverMediaHub> with SingleTicker
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 6, vsync: this);
   }
 
   @override
@@ -159,6 +160,8 @@ class _CaregiverMediaHubState extends State<CaregiverMediaHub> with SingleTicker
     final photos = LocalDb.mediaByType('familyFace');
     return Column(
       children: [
+        _guide('Add clear, close-up photos of family members and label each with '
+            'their name. These power the face and name games.', Icons.photo_library),
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: BigButton(
@@ -169,71 +172,107 @@ class _CaregiverMediaHubState extends State<CaregiverMediaHub> with SingleTicker
           ),
         ),
         Expanded(
-          child: GridView.builder(
-            padding: const EdgeInsets.all(16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 0.8,
-            ),
-            itemCount: photos.length,
-            itemBuilder: (context, index) {
-              final photo = photos[index];
-              return GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => PhotoViewerScreen(
-                        imagePath: photo.localPath ?? '',
-                        label: photo.label ?? '',
-                        onDelete: () {
-                          LocalDb.deleteMedia(photo.id);
-                          setState(() {});
-                        },
-                        onEditLabel: (newLabel) {
-                          final updated = MediaItem(id: photo.id, type: photo.type, url: photo.url, localPath: photo.localPath, label: newLabel);
-                          LocalDb.putMedia(updated);
-                          setState(() {});
-                        },
-                      ),
-                    ),
-                  );
-                },
-                child: BigCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppTheme.cardRadius)),
-                          child: MediaImage(src: photo.localPath ?? photo.url, fit: BoxFit.cover),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(
-                          photo.label ?? '',
-                          style: AppText.title().copyWith(fontSize: 24),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
+          child: photos.isEmpty
+              ? _emptyState('No photos yet', 'Tap “Add New Photo” to begin.', Icons.image_outlined)
+              : GridView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 0.78,
                   ),
+                  itemCount: photos.length,
+                  itemBuilder: (context, index) {
+                    final photo = photos[index];
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PhotoViewerScreen(
+                              imagePath: photo.localPath ?? photo.url,
+                              label: photo.label ?? '',
+                              onDelete: () {
+                                LocalDb.deleteMedia(photo.id);
+                                setState(() {});
+                              },
+                              onEditLabel: (newLabel) {
+                                final updated = MediaItem(id: photo.id, type: photo.type, url: photo.url, localPath: photo.localPath, label: newLabel);
+                                LocalDb.putMedia(updated);
+                                setState(() {});
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: MediaImage(
+                                  src: photo.localPath ?? photo.url, fit: BoxFit.cover),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                              child: Text(
+                                photo.label ?? '',
+                                style: AppText.title().copyWith(fontSize: 17),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ),
       ],
     );
   }
 
+  Widget _emptyState(String title, String subtitle, IconData icon) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 72, color: AppColors.border),
+            const SizedBox(height: 16),
+            Text(title, style: AppText.title(), textAlign: TextAlign.center),
+            const SizedBox(height: 6),
+            Text(subtitle,
+                style: AppText.body(color: AppColors.textMuted), textAlign: TextAlign.center),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildListTab(String type, String buttonLabel, IconData icon, VoidCallback onAdd) {
     final items = LocalDb.mediaByType(type);
+    final bool isVoice = type == 'familyVoice';
     return Column(
       children: [
+        _guide(
+          isVoice
+              ? 'Record short clips of family members saying who they are. The '
+                  'patient hears these warm, familiar voices in the games.'
+              : 'Add favourite songs or calming music. These play in Calm mode '
+                  'and during relaxing moments.',
+          isVoice ? Icons.record_voice_over : Icons.library_music,
+        ),
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: BigButton(
@@ -244,7 +283,9 @@ class _CaregiverMediaHubState extends State<CaregiverMediaHub> with SingleTicker
           ),
         ),
         Expanded(
-          child: ListView.builder(
+          child: items.isEmpty
+              ? _emptyState('Nothing here yet', 'Use the button above to add.', icon)
+              : ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: items.length,
             itemBuilder: (context, index) {
@@ -358,14 +399,17 @@ class _CaregiverMediaHubState extends State<CaregiverMediaHub> with SingleTicker
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF6F8FB),
       appBar: AppBar(
-        title: const Text('Media Hub'),
+        title: const Text('Content Studio'),
         bottom: TabBar(
           controller: _tabController,
-          labelStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          unselectedLabelStyle: const TextStyle(fontSize: 18),
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
+          labelStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+          unselectedLabelStyle: const TextStyle(fontSize: 15),
           indicatorColor: AppColors.primary,
-          indicatorWeight: 4,
+          indicatorWeight: 3,
           labelColor: AppColors.primary,
           unselectedLabelColor: AppColors.textMuted,
           tabs: const [
@@ -374,6 +418,7 @@ class _CaregiverMediaHubState extends State<CaregiverMediaHub> with SingleTicker
             Tab(icon: Icon(Icons.library_music), text: 'Music'),
             Tab(icon: Icon(Icons.waving_hand), text: 'Welcome'),
             Tab(icon: Icon(Icons.gamepad), text: 'Prompts'),
+            Tab(icon: Icon(Icons.auto_awesome), text: 'Games'),
           ],
         ),
       ),
@@ -385,6 +430,29 @@ class _CaregiverMediaHubState extends State<CaregiverMediaHub> with SingleTicker
           _buildListTab('music', 'Add Music Track', Icons.library_music, _pickMusic),
           _buildWelcomeTab(),
           _buildPromptsTab(),
+          const GamesContentScreen(embedded: true),
+        ],
+      ),
+    );
+  }
+
+  /// A friendly guidance banner shown at the top of each tab.
+  static Widget _guide(String text, IconData icon) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.primarySoft,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.primary, size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(text,
+                style: AppText.body(color: AppColors.primaryDark).copyWith(fontSize: 13.5)),
+          ),
         ],
       ),
     );
