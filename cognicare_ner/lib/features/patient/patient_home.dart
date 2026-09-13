@@ -130,6 +130,10 @@ class _PatientHomeState extends State<PatientHome> {
     Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
   }
 
+  /// Whether a game is enabled in caregiver Game Settings (default on).
+  bool _enabled(String key) =>
+      (LocalDb.getSetting('gameConfig_${key}_enabled') as bool?) ?? true;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -221,66 +225,81 @@ class _PatientHomeState extends State<PatientHome> {
                           children: [
                             Text('Activities for today', style: AppText.title().copyWith(fontSize: 28)),
                             const SizedBox(height: 24),
-                            _GameCard(
-                              title: t.whatComesNext,
-                              description: 'Pattern matching exercise',
-                              icon: Icons.extension_rounded,
-                              gradient: const LinearGradient(colors: AppColors.primaryGradient),
-                              onTap: () => _open(context, PatternGame(patientId: widget.patientId)),
-                            ),
-                            const SizedBox(height: 16),
-                            _GameCard(
-                              title: t.whoIsThis,
-                              description: 'Face recognition game',
-                              icon: Icons.face_rounded,
-                              gradient: const LinearGradient(colors: AppColors.secondaryGradient),
-                              onTap: () => _open(context, FamilyGame(patientId: widget.patientId)),
-                            ),
-                            const SizedBox(height: 16),
-                            _GameCard(
-                              title: t.whoseVoiceIsThis,
-                              description: 'Voice recognition exercise',
-                              icon: Icons.hearing_rounded,
-                              gradient: const LinearGradient(colors: AppColors.successGradient),
-                              onTap: () => _open(context, VoiceGame(patientId: widget.patientId)),
-                            ),
-                            const SizedBox(height: 16),
-                            _GameCard(
-                              title: 'Complete the name',
-                              description: 'Finish your family member’s name',
-                              icon: Icons.abc_rounded,
-                              gradient: const LinearGradient(colors: AppColors.primaryGradient),
-                              onTap: () =>
-                                  _open(context, NameCompletionGame(patientId: widget.patientId)),
-                            ),
-                            const SizedBox(height: 16),
-                            _GameCard(
-                              title: 'Do you remember?',
-                              description: 'Recall special life moments',
-                              icon: Icons.auto_stories_rounded,
-                              gradient: const LinearGradient(colors: AppColors.secondaryGradient),
-                              onTap: () =>
-                                  _open(context, MilestoneGame(patientId: widget.patientId)),
-                            ),
-                            const SizedBox(height: 16),
-                            _GameCard(
-                              title: 'What comes next?',
-                              description: 'Put the daily routine in order',
-                              icon: Icons.checklist_rounded,
-                              gradient: const LinearGradient(colors: AppColors.successGradient),
-                              onTap: () =>
-                                  _open(context, RoutineGame(patientId: widget.patientId)),
-                            ),
-                            const SizedBox(height: 16),
-                            _GameCard(
-                              title: 'What is this?',
-                              description: 'Name familiar objects',
-                              icon: Icons.category_rounded,
-                              gradient: const LinearGradient(colors: AppColors.primaryGradient),
-                              onTap: () =>
-                                  _open(context, ObjectGame(patientId: widget.patientId)),
-                            ),
-                            const SizedBox(height: 24),
+                            if (_enabled('pattern')) ...[
+                              _GameCard(
+                                title: t.whatComesNext,
+                                description: 'Pattern matching exercise',
+                                icon: Icons.extension_rounded,
+                                gradient: const LinearGradient(colors: AppColors.primaryGradient),
+                                onTap: () => _open(context, PatternGame(patientId: widget.patientId)),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                            if (_enabled('faces')) ...[
+                              _GameCard(
+                                title: t.whoIsThis,
+                                description: 'Face recognition game',
+                                icon: Icons.face_rounded,
+                                gradient: const LinearGradient(colors: AppColors.secondaryGradient),
+                                onTap: () => _open(context, FamilyGame(patientId: widget.patientId)),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                            if (_enabled('voice')) ...[
+                              _GameCard(
+                                title: t.whoseVoiceIsThis,
+                                description: 'Voice recognition exercise',
+                                icon: Icons.hearing_rounded,
+                                gradient: const LinearGradient(colors: AppColors.successGradient),
+                                onTap: () => _open(context, VoiceGame(patientId: widget.patientId)),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                            if (_enabled('name_completion')) ...[
+                              _GameCard(
+                                title: 'Complete the name',
+                                description: 'Finish your family member’s name',
+                                icon: Icons.abc_rounded,
+                                gradient: const LinearGradient(colors: AppColors.primaryGradient),
+                                onTap: () =>
+                                    _open(context, NameCompletionGame(patientId: widget.patientId)),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                            if (_enabled('milestone')) ...[
+                              _GameCard(
+                                title: 'Do you remember?',
+                                description: 'Recall special life moments',
+                                icon: Icons.auto_stories_rounded,
+                                gradient: const LinearGradient(colors: AppColors.secondaryGradient),
+                                onTap: () =>
+                                    _open(context, MilestoneGame(patientId: widget.patientId)),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                            if (_enabled('routine')) ...[
+                              _GameCard(
+                                title: 'What comes next?',
+                                description: 'Put the daily routine in order',
+                                icon: Icons.checklist_rounded,
+                                gradient: const LinearGradient(colors: AppColors.successGradient),
+                                onTap: () =>
+                                    _open(context, RoutineGame(patientId: widget.patientId)),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                            if (_enabled('objects')) ...[
+                              _GameCard(
+                                title: 'What is this?',
+                                description: 'Name familiar objects',
+                                icon: Icons.category_rounded,
+                                gradient: const LinearGradient(colors: AppColors.primaryGradient),
+                                onTap: () =>
+                                    _open(context, ObjectGame(patientId: widget.patientId)),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                            const SizedBox(height: 8),
                             _GameCard(
                               title: t.relax,
                               description: 'Take a break and calm down',

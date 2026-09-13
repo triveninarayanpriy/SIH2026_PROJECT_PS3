@@ -135,8 +135,17 @@ class _SwitchRoleButton extends StatelessWidget {
   const _SwitchRoleButton();
 
   void _switch() {
-    CogniCareApp.navKey.currentState?.popUntil((route) => route.isFirst);
+    // Clear the active role, then rebuild a fresh switchable home as the only
+    // route. This is robust even when a screen (e.g. WelcomeScreen) used
+    // pushReplacement and removed the original home route — popUntil(isFirst)
+    // alone would then do nothing.
     LocalDb.clearActiveRole();
+    final NavigatorState? nav = CogniCareApp.navKey.currentState;
+    if (nav == null) return;
+    nav.pushAndRemoveUntil(
+      MaterialPageRoute<void>(builder: (_) => const _SwitchableHome()),
+      (route) => false,
+    );
   }
 
   @override

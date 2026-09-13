@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../features/shared/language_selector_screen.dart';
 import '../services/local_db.dart';
+import '../services/locale_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text.dart';
 import '../theme/app_theme.dart';
@@ -30,7 +32,12 @@ class RolePickerScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 40),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: _LanguagePill(),
+                ),
+                const SizedBox(height: 12),
                 Column(
                   children: [
                     const Icon(Icons.favorite_rounded, size: 64, color: AppColors.primary),
@@ -93,6 +100,47 @@ class RolePickerScreen extends StatelessWidget {
                 const SizedBox(height: 32),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Language chooser on the landing page. Sets the app-wide locale so the
+/// patient, caregiver, and doctor views all follow it.
+class _LanguagePill extends StatelessWidget {
+  String get _current {
+    final String code = (LocalDb.getSetting('app_locale') as String?) ?? 'en';
+    for (final Map<String, String> l in LocaleController.supportedLanguages) {
+      if (l['code'] == code) return l['nativeName'] ?? l['name'] ?? 'English';
+    }
+    return 'English';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(999),
+      elevation: 1,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const LanguageSelectorScreen()),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              const Icon(Icons.language_rounded, color: AppColors.primary, size: 22),
+              const SizedBox(width: 8),
+              Text(_current,
+                  style: AppText.body().copyWith(fontWeight: FontWeight.w600)),
+              const SizedBox(width: 4),
+              const Icon(Icons.expand_more_rounded, color: AppColors.textMuted, size: 20),
+            ],
           ),
         ),
       ),

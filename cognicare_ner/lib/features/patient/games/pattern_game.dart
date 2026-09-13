@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 import '../../../core/ai/difficulty_engine.dart';
 import '../../../core/services/local_db.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text.dart';
 import 'game_models.dart';
 import 'game_shell.dart';
-import 'game_tile.dart';
 
 /// Geometric shapes and colors often used in clinical cognitive assessments (e.g. MoCA, MMSE).
 const List<GameItem> kPatternItems = <GameItem>[
@@ -60,27 +60,7 @@ List<GameRound> buildPatternRounds({
     final List<GameItem> answerItems = <GameItem>[correct, ...distractors]
       ..shuffle(rng);
 
-    final Widget stimulus = Wrap(
-      alignment: WrapAlignment.center,
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        for (final GameItem it in sequence)
-          GameTile(
-            width: 84,
-            height: 84,
-            padding: const EdgeInsets.all(8),
-            child: GameItemContent(item: it, iconSize: 34),
-          ),
-        const GameTile(
-          width: 84,
-          height: 84,
-          highlight: true,
-          child: Icon(Icons.help_outline_rounded,
-              size: 40, color: AppColors.primary),
-        ),
-      ],
-    );
+    final Widget stimulus = _PatternSequence(sequence: sequence);
 
     out.add(GameRound(
       prompt: 'What comes next?',
@@ -92,14 +72,95 @@ List<GameRound> buildPatternRounds({
           GameChoice(
             id: it.id,
             label: it.label,
-            width: 140,
-            height: 140,
-            content: GameItemContent(item: it),
+            width: 128,
+            height: 128,
+            content: _PatternShape(item: it, size: 56, showLabel: true),
           ),
       ],
     ));
   }
   return out;
+}
+
+/// A single bold, solid shape (no clinical-looking outline icons) plus optional
+/// label — much clearer for elderly eyes than a small icon.
+class _PatternShape extends StatelessWidget {
+  const _PatternShape({required this.item, this.size = 48, this.showLabel = false});
+
+  final GameItem item;
+  final double size;
+  final bool showLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color color = item.color ?? AppColors.primary;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Icon(item.icon, size: size, color: color),
+        if (showLabel) ...<Widget>[
+          const SizedBox(height: 8),
+          Text(
+            item.label,
+            textAlign: TextAlign.center,
+            style: AppText.body().copyWith(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// The stimulus sequence: a horizontally-scrollable row of bold shape cards that
+/// always ends with a clear, highlighted "?" card — no wrapping, no overlap.
+class _PatternSequence extends StatelessWidget {
+  const _PatternSequence({required this.sequence});
+
+  final List<GameItem> sequence;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          for (final GameItem it in sequence)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: _cell(child: _PatternShape(item: it, size: 44)),
+            ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 6),
+            child: Icon(Icons.arrow_forward_rounded, color: AppColors.textMuted),
+          ),
+          _cell(
+            highlight: true,
+            child: const Icon(Icons.help_outline_rounded,
+                size: 40, color: AppColors.primary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _cell({required Widget child, bool highlight = false}) {
+    return Container(
+      width: 78,
+      height: 78,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: highlight ? AppColors.primarySoft : AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: highlight ? AppColors.primary : AppColors.border,
+          width: highlight ? 2.5 : 1.5,
+        ),
+      ),
+      child: child,
+    );
+  }
 }
 
 /// Launches the pattern game: resolves the adaptive difficulty, builds the

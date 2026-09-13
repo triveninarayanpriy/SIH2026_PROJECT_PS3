@@ -20,7 +20,9 @@ class BigButton extends StatefulWidget {
   });
 
   final String label;
-  final VoidCallback onTap;
+
+  /// Tap handler. When null, the button renders in a disabled (dimmed) state.
+  final VoidCallback? onTap;
   final IconData? icon;
   final Color? color;
   final Gradient? gradient;
@@ -51,17 +53,22 @@ class _BigButtonState extends State<BigButton> with SingleTickerProviderStateMix
     super.dispose();
   }
 
-  void _onTapDown(TapDownDetails details) => _controller.forward();
-  
-  void _onTapUp(TapUpDetails details) {
-    _controller.reverse();
-    widget.onTap();
+  void _onTapDown(TapDownDetails details) {
+    if (widget.onTap == null) return;
+    _controller.forward();
   }
-  
+
+  void _onTapUp(TapUpDetails details) {
+    if (widget.onTap == null) return;
+    _controller.reverse();
+    widget.onTap!();
+  }
+
   void _onTapCancel() => _controller.reverse();
 
   @override
   Widget build(BuildContext context) {
+    final bool disabled = widget.onTap == null;
     final Color bg = widget.color ?? AppColors.primary;
     final Gradient bgGradient = widget.gradient ?? LinearGradient(
       colors: [bg, bg.withOpacity(0.8)],
@@ -72,8 +79,11 @@ class _BigButtonState extends State<BigButton> with SingleTickerProviderStateMix
 
     return Semantics(
       button: true,
+      enabled: !disabled,
       label: widget.label,
-      child: GestureDetector(
+      child: Opacity(
+        opacity: disabled ? 0.5 : 1.0,
+        child: GestureDetector(
         onTapDown: _onTapDown,
         onTapUp: _onTapUp,
         onTapCancel: _onTapCancel,
@@ -128,6 +138,7 @@ class _BigButtonState extends State<BigButton> with SingleTickerProviderStateMix
             ),
           ),
         ),
+      ),
       ),
     );
   }

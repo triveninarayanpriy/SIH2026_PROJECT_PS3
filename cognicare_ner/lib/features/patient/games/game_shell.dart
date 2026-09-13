@@ -68,12 +68,12 @@ class _GameShellState extends State<GameShell> {
   int _index = 0;
   int _correct = 0;
   int _wrongStreak = 0;
-  int _spokenIndex = -1; // last round index auto-spoken
   bool _roundScored = false; // first attempt on this round has been counted
-  bool _locked = false; // ignore taps while a correct answer advances
+  bool _locked = false; // ignore taps while feedback / advance runs
   bool _finished = false;
   bool _leaving = false; // switching to Calm mode
   bool _listening = false; // optional voice-answer state
+  bool _speaking = false; // prompt / feedback audio is playing
   Timer? _idleTimer;
   Timer? _listenTimer;
   StreamSubscription<RemoteButton>? _remoteSub;
@@ -86,9 +86,11 @@ class _GameShellState extends State<GameShell> {
   void initState() {
     super.initState();
     _start = DateTime.now();
-    _resetIdle();
     // The NAWAL BLE remote drives the same game (Android only; silent on web).
     _remoteSub = NawalRemote.instance.buttons.listen(_onRemote);
+    // Present the first round once the first frame is up (needs context for
+    // localized prompts).
+    WidgetsBinding.instance.addPostFrameCallback((_) => _presentRound());
   }
 
   @override
@@ -131,13 +133,6 @@ class _GameShellState extends State<GameShell> {
       default:
         break;
     }
-  }
-
-  void _repeatPrompt() {
-    if (!mounted) return;
-    _resetIdle();
-    final String prompt = _localizedPrompt(context);
-    TtsService.instance.play(prompt, audioPath: _round.promptAudioPath);
   }
 
   /// Patient-triggered "I need help" — records a caregiver SOS alert.
@@ -200,21 +195,63 @@ class _GameShellState extends State<GameShell> {
     }
   }
 
-  /// Speaks the prompt once per round (caregiver clip if mapped, else TTS).
-  void _autoSpeak(String prompt) {
-    if (_spokenIndex == _index || _finished) return;
-    _spokenIndex = _index;
-    final String? audioPath = _round.promptAudioPath;
-    Future<void>.microtask(() async {
-      await TtsService.instance.play(prompt, audioPath: audioPath);
-      if (mounted && !_finished && !_locked) {
-        _listen();
-      }
+  /// Present the current round: speak the prompt FULLY, then open one voice
+  /// listen window. Strictly sequential so the prompt and feedback audio never
+  /// overlap with the microphone (which was the source of the demo glitches).
+  Future<void> _presentRound() async {
+    if (!mounted || _finished || _leaving) return;
+    _resetIdle();
+    // Make sure the mic is off before we speak.
+    _listenTimer?.cancel();
+    if (_listening) {
+      await SttService.instance.stop();
+      if (mounted) setState(() => _listening = false);
+    }
+    _locked = false;
+    if (mounted) setState(() => _speaking = true);
+    final String prompt = _localizedPrompt(context);
+    await TtsService.instance.play(prompt, audioPath: _round.promptAudioPath);
+    if (!mounted || _finished || _leaving) return;
+    setState(() => _speaking = false);
+    // After the prompt finishes, offer one hands-free listen window. Tapping is
+    // always available regardless.
+    _startListenWindow();
+  }
+
+  /// Replays the current prompt fully (Sound / Back on the remote, or tap).
+  Future<void> _repeatPrompt() async {
+    if (!mounted || _finished || _leaving || _locked) return;
+    await _presentRound();
+  }
+
+  /// One bounded voice-listen window (no infinite re-listen loop). On silence it
+  /// simply stops; the patient can tap an answer or tap the mic to try again.
+  Future<void> _startListenWindow() async {
+    if (_locked || _leaving || _finished || _speaking) return;
+    final bool ok = await SttService.instance.ensureInit();
+    if (!mounted) return;
+    if (!ok) return; // voice unavailable here — tapping still works.
+    setState(() => _listening = true);
+    _listenTimer?.cancel();
+    _listenTimer = Timer(const Duration(seconds: 6), () async {
+      if (!mounted || !_listening) return;
+      await SttService.instance.stop();
+      if (mounted) setState(() => _listening = false);
     });
+    await SttService.instance.listen(
+      listenFor: const Duration(seconds: 6),
+      onResult: (String text) {
+        _listenTimer?.cancel();
+        if (!mounted || _locked || _leaving) return;
+        setState(() => _listening = false);
+        _matchSpoken(text);
+      },
+    );
   }
 
   Future<void> _answer(String choiceId) async {
     if (_locked || _leaving) return;
+    _locked = true; // lock immediately: no double-taps while feedback plays
     _resetIdle();
     final AppLocalizations t = AppLocalizations.of(context);
     final bool isCorrect = choiceId == _round.answerId;
@@ -225,33 +262,40 @@ class _GameShellState extends State<GameShell> {
       if (isCorrect) _correct++;
     }
 
-    // Stop listening before feedback
+    // Stop listening + any in-progress prompt so feedback audio plays clean.
     _listenTimer?.cancel();
-    setState(() => _listening = false);
+    if (mounted) setState(() => _listening = false);
     await SttService.instance.stop();
+    await TtsService.instance.stop();
+    if (mounted) setState(() => _speaking = false);
 
     if (isCorrect) {
       _wrongStreak = 0;
-      _locked = true;
       await _playChime('assets/sounds/correct.wav');
       if (!mounted) return;
       GentleFeedback.correct(context);
-      await TtsService.instance.play(t.veryGood, audioPath: LocalDb.mediaByType('game_prompt_correct').firstOrNull?.localPath);
-      if (!mounted) return;
+      // Play the praise FULLY before moving on — this matters in demos.
+      await TtsService.instance.play(
+        t.veryGood,
+        audioPath: LocalDb.mediaByType('game_prompt_correct').firstOrNull?.localPath,
+      );
+      if (!mounted || _leaving) return;
       _advance();
     } else {
       _wrongStreak++;
-      _locked = true;
       await _playChime('assets/sounds/tryagain.wav');
       if (!mounted) return;
       GentleFeedback.tryAgain(context);
-      await TtsService.instance.play(t.letsTryAgain, audioPath: LocalDb.mediaByType('game_prompt_wrong').firstOrNull?.localPath);
-      if (!mounted) return;
+      await TtsService.instance.play(
+        t.letsTryAgain,
+        audioPath: LocalDb.mediaByType('game_prompt_wrong').firstOrNull?.localPath,
+      );
+      if (!mounted || _leaving) return;
       if (_wrongStreak >= 3) {
         _toCalm();
       } else {
-        setState(() => _locked = false);
-        _listen(); // restart listening after feedback finishes
+        // Re-present the same round (replays the prompt fully, then listens).
+        _presentRound();
       }
     }
   }
@@ -266,7 +310,7 @@ class _GameShellState extends State<GameShell> {
       _roundScored = false;
       _locked = false;
     });
-    _resetIdle();
+    _presentRound();
   }
 
   Future<void> _finish() async {
@@ -301,7 +345,6 @@ class _GameShellState extends State<GameShell> {
       return _RewardView(correct: _correct, total: _total);
     }
     final String prompt = _localizedPrompt(context);
-    _autoSpeak(prompt);
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
@@ -343,73 +386,37 @@ class _GameShellState extends State<GameShell> {
     );
   }
 
-  /// Optional voice answer. Tapping is always available; this only adds a spoken
-  /// shortcut. Matches the recognized word to a choice's [GameChoice.label].
+  /// Optional voice answer. Tapping is always the guaranteed path; this only
+  /// adds a hands-free shortcut. Disabled while the prompt/feedback is speaking.
   Widget _micButton() {
+    final bool busy = _speaking || _locked;
+    final String label = _speaking
+        ? 'Listen…'
+        : (_listening ? 'Listening…' : 'Answer by voice');
     return BigButton(
-      label: _listening ? 'Listening…' : 'Answer by voice',
+      label: label,
       icon: _listening ? Icons.mic_rounded : Icons.mic_none_rounded,
       color: _listening ? AppColors.primary : AppColors.secondarySoft,
-      onTap: _listen,
+      onTap: busy ? null : _startListenWindow,
     );
   }
 
-  Future<void> _listen() async {
-    if (_locked || _listening || _leaving) return;
-    _resetIdle();
-    final bool ok = await SttService.instance.ensureInit();
-    if (!mounted) return;
-    if (!ok) {
-      _hint('Voice answers are not available here — please tap.');
-      return;
-    }
-    setState(() => _listening = true);
-    // Restart listening if nothing is recognized before the timeout.
-    // This allows it to continuously listen until a right/wrong answer is heard.
-    _listenTimer?.cancel();
-    _listenTimer = Timer(const Duration(seconds: 5), () {
-      if (mounted && _listening) {
-        setState(() => _listening = false);
-        _listen(); // Restart listening
-      }
-    });
-    await SttService.instance.listen(
-      listenFor: const Duration(seconds: 5),
-      onResult: (String text) {
-        _listenTimer?.cancel();
-        if (!mounted) return;
-        setState(() => _listening = false);
-        _matchSpoken(text);
-      },
-    );
-  }
-
-  void _matchSpoken(String spoken) async {
+  /// Match a spoken phrase to a choice label. On no match, gently invite a
+  /// retry (no auto-loop — the patient taps an answer or the mic to try again).
+  void _matchSpoken(String spoken) {
     final String s = spoken.trim().toLowerCase();
-    if (s.isEmpty) {
-      _locked = true;
-      _hint("I didn't catch that — try again.");
-      await TtsService.instance.play(AppLocalizations.of(context).letsTryAgain, audioPath: LocalDb.mediaByType('game_prompt_wrong').firstOrNull?.localPath);
-      if (mounted && !_leaving) {
-        setState(() => _locked = false);
-        _listen();
-      }
-      return;
-    }
-    for (final GameChoice c in _round.choices) {
-      final String? label = c.label?.trim().toLowerCase();
-      if (label == null || label.isEmpty) continue;
-      if (s == label || s.contains(label) || label.contains(s)) {
-        await _answer(c.id);
-        return;
+    if (s.isNotEmpty) {
+      for (final GameChoice c in _round.choices) {
+        final String? label = c.label?.trim().toLowerCase();
+        if (label == null || label.isEmpty) continue;
+        if (s == label || s.contains(label) || label.contains(s)) {
+          _answer(c.id);
+          return;
+        }
       }
     }
-    _locked = true;
-    _hint("That wasn't right, try again.");
-    await TtsService.instance.play(AppLocalizations.of(context).letsTryAgain, audioPath: LocalDb.mediaByType('game_prompt_wrong').firstOrNull?.localPath);
-    if (mounted && !_leaving) {
-      setState(() => _locked = false);
-      _listen();
+    if (mounted && !_leaving && !_locked) {
+      _hint("I didn't catch that — tap an answer, or tap the mic to try again.");
     }
   }
 

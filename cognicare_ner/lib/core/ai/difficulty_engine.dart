@@ -66,8 +66,22 @@ class DifficultyEngine {
       ..sort((a, b) => b.at.compareTo(a.at));
   }
 
-  /// Computes AND persists the starting difficulty for the next session (Tier 1).
+  /// Computes AND persists the starting difficulty for the next session.
+  ///
+  /// If the caregiver turned OFF adaptive difficulty for this game, the manual
+  /// level they picked in Game Settings is used verbatim; otherwise the Tier-1
+  /// adaptive rule applies.
   int startingDifficulty({required String game, required String patientId}) {
+    final bool adaptive =
+        (LocalDb.getSetting('gameConfig_${game}_adaptive') as bool?) ?? true;
+    if (!adaptive) {
+      final int manual =
+          (LocalDb.getSetting('gameConfig_${game}_difficulty') as int?) ??
+              defaultDifficulty;
+      final int level = _clamp(manual);
+      LocalDb.setGameDifficulty(game, level);
+      return level;
+    }
     final int current =
         LocalDb.gameDifficulty(game, fallback: defaultDifficulty);
     final int next = nextDifficulty(_recent(game, patientId), current);
