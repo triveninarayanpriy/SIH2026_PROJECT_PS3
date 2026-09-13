@@ -8,6 +8,7 @@ import '../ai/anomaly_detector.dart';
 import '../../features/doctor/doctor_repository.dart';
 import 'demo_mode.dart';
 import 'firestore_service.dart';
+import 'game_content.dart';
 import 'local_db.dart';
 import 'sync_service.dart';
 
@@ -98,6 +99,9 @@ class DemoSeeder {
           label: 'Favourite tune'),
     );
 
+    // Personalised game content (Milestones, Routine, Objects) for Kamala.
+    await _seedGameContent();
+
     // Reminders.
     await SyncService.instance.saveReminder(
       _pid,
@@ -179,11 +183,28 @@ class DemoSeeder {
     await add('faces', 'memory', 2, 3);
     await add('faces', 'memory', 2, 2);
     await add('faces', 'memory', 1, 1);
+    // language (name completion): steady, mild.
+    await add('name_completion', 'language', 3, 15);
+    await add('name_completion', 'language', 4, 8);
+    await add('name_completion', 'language', 3, 2);
+    // executive (routine sequencing): a little harder for her.
+    await add('routine', 'executive', 3, 13);
+    await add('routine', 'executive', 2, 7);
+    await add('routine', 'executive', 3, 1);
+    // recognition/attention (objects) + episodic (milestone).
+    await add('objects', 'attention', 4, 10);
+    await add('objects', 'attention', 4, 3);
+    await add('milestone', 'memory', 4, 12);
+    await add('milestone', 'memory', 3, 5);
 
     // Persist per-game difficulty for the dashboard readouts.
     await LocalDb.setGameDifficulty('pattern', 3);
     await LocalDb.setGameDifficulty('faces', 2);
     await LocalDb.setGameDifficulty('voice', 2);
+    await LocalDb.setGameDifficulty('name_completion', 2);
+    await LocalDb.setGameDifficulty('routine', 2);
+    await LocalDb.setGameDifficulty('objects', 2);
+    await LocalDb.setGameDifficulty('milestone', 2);
 
     // Fire the anomaly detector on the fresh history.
     await AnomalyDetector.instance.runForPatient(_pid);
@@ -194,6 +215,54 @@ class DemoSeeder {
           uid: DemoMode.doctorUid, patientId: _pid, isDoctor: true);
     } catch (_) {}
     await _seedDoctorCache();
+  }
+
+  /// Seeds caregiver-authored content for the four personalised games so the
+  /// demo build is immediately playable. Images reuse the bundled family assets.
+  static Future<void> _seedGameContent() async {
+    // Milestones (Game 2).
+    await GameContent.saveMilestone(Milestone(
+      id: 'demo-ms-1',
+      title: 'Wedding day, 1971',
+      story: 'This is your wedding day in the village, many years ago.',
+      question: 'In which year did you get married?',
+      answer: '1971',
+      distractors: <String>['1965', '1980'],
+      imageUrl: 'assets/images/family/f1.png',
+    ));
+    await GameContent.saveMilestone(Milestone(
+      id: 'demo-ms-2',
+      title: 'First grandchild',
+      story: 'The day your first grandchild was born, the whole family gathered.',
+      question: 'Who was born on that happy day?',
+      answer: 'Your grandchild',
+      distractors: <String>['Your neighbour', 'A cousin'],
+      imageUrl: 'assets/images/family/f2.png',
+    ));
+
+    // Daily routine (Game 3).
+    const List<List<String>> steps = <List<String>>[
+      <String>['demo-rt-1', 'Wake up'],
+      <String>['demo-rt-2', 'Drink tea'],
+      <String>['demo-rt-3', 'Take medicine'],
+      <String>['demo-rt-4', 'Morning walk'],
+      <String>['demo-rt-5', 'Eat lunch'],
+    ];
+    for (int i = 0; i < steps.length; i++) {
+      await GameContent.saveRoutineStep(
+          RoutineStep(id: steps[i][0], label: steps[i][1], order: i));
+    }
+
+    // Objects (Game 4).
+    const List<List<String>> objs = <List<String>>[
+      <String>['demo-ob-1', 'Gamosa', 'assets/images/family/f3.png'],
+      <String>['demo-ob-2', 'Tea cup', 'assets/images/family/f1.png'],
+      <String>['demo-ob-3', 'Betel-nut box', 'assets/images/family/f2.png'],
+    ];
+    for (final List<String> o in objs) {
+      await GameContent.saveObject(
+          CulturalObject(id: o[0], name: o[1], imageUrl: o[2]));
+    }
   }
 
   /// Writes the doctor's cached rows + detail (LocalDb appState) so the doctor

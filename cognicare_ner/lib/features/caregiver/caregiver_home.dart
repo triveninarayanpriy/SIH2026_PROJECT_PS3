@@ -14,6 +14,7 @@ import 'caregiver_alert_banner.dart';
 import 'caregiver_dashboard.dart';
 import 'caregiver_game_config_screen.dart';
 import 'caregiver_media_hub.dart';
+import 'games_content_screen.dart';
 import '../shared/language_selector_screen.dart';
 import 'caregiver_reminders_screen.dart';
 import 'remote_connect_screen.dart';
@@ -119,6 +120,14 @@ class CaregiverHome extends StatelessWidget {
                   icon: Icons.videogame_asset_rounded,
                   color: AppColors.success,
                   onTap: () => _open(context, const CaregiverGameConfigScreen()),
+                ),
+                const SizedBox(height: 16),
+                _ActionCard(
+                  title: 'Personalise Games',
+                  description: 'Add memories, routine steps, and objects',
+                  icon: Icons.auto_awesome_rounded,
+                  color: AppColors.secondary,
+                  onTap: () => _open(context, const GamesContentScreen()),
                 ),
                 const SizedBox(height: 16),
                 _ActionCard(

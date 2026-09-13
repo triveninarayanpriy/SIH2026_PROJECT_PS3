@@ -16,7 +16,11 @@ import '../../core/widgets/remote_status_chip.dart';
 import '../../l10n/app_localizations.dart';
 import 'calm_mode.dart';
 import 'games/family_game.dart';
+import 'games/milestone_game.dart';
+import 'games/name_completion_game.dart';
+import 'games/object_game.dart';
 import 'games/pattern_game.dart';
+import 'games/routine_game.dart';
 import 'games/voice_game.dart';
 import 'simulation_mode_screen.dart';
 
@@ -239,6 +243,42 @@ class _PatientHomeState extends State<PatientHome> {
                               icon: Icons.hearing_rounded,
                               gradient: const LinearGradient(colors: AppColors.successGradient),
                               onTap: () => _open(context, VoiceGame(patientId: widget.patientId)),
+                            ),
+                            const SizedBox(height: 16),
+                            _GameCard(
+                              title: 'Complete the name',
+                              description: 'Finish your family member’s name',
+                              icon: Icons.abc_rounded,
+                              gradient: const LinearGradient(colors: AppColors.primaryGradient),
+                              onTap: () =>
+                                  _open(context, NameCompletionGame(patientId: widget.patientId)),
+                            ),
+                            const SizedBox(height: 16),
+                            _GameCard(
+                              title: 'Do you remember?',
+                              description: 'Recall special life moments',
+                              icon: Icons.auto_stories_rounded,
+                              gradient: const LinearGradient(colors: AppColors.secondaryGradient),
+                              onTap: () =>
+                                  _open(context, MilestoneGame(patientId: widget.patientId)),
+                            ),
+                            const SizedBox(height: 16),
+                            _GameCard(
+                              title: 'What comes next?',
+                              description: 'Put the daily routine in order',
+                              icon: Icons.checklist_rounded,
+                              gradient: const LinearGradient(colors: AppColors.successGradient),
+                              onTap: () =>
+                                  _open(context, RoutineGame(patientId: widget.patientId)),
+                            ),
+                            const SizedBox(height: 16),
+                            _GameCard(
+                              title: 'What is this?',
+                              description: 'Name familiar objects',
+                              icon: Icons.category_rounded,
+                              gradient: const LinearGradient(colors: AppColors.primaryGradient),
+                              onTap: () =>
+                                  _open(context, ObjectGame(patientId: widget.patientId)),
                             ),
                             const SizedBox(height: 24),
                             _GameCard(
