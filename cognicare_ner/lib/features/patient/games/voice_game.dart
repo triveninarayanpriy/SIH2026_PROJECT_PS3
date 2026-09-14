@@ -85,6 +85,9 @@ class _VoiceGameState extends State<VoiceGame> {
       rounds.add(GameRound(
         prompt: 'Whose voice is this?',
         promptAudioPath: LocalDb.mediaByType('game_prompt_voice').firstOrNull?.localPath,
+        // The family voice plays automatically after the prompt (strict order);
+        // the button below lets the patient replay it by tapping.
+        stimulusAudioPath: target.voice,
         stimulus: AudioPlayButton(src: target.voice!),
         answerId: target.name,
         choices: [

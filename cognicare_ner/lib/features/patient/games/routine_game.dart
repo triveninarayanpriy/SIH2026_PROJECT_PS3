@@ -70,8 +70,9 @@ class _RoutineGameState extends State<RoutineGame> {
     final int options = max(2, min(4, _difficulty + 1));
     final List<GameRound> rounds = <GameRound>[];
 
-    // One round per transition: given steps[0..i-1], pick steps[i].
-    for (int i = 1; i < _steps.length; i++) {
+    // First round asks what comes first; each later round: given steps[0..i-1],
+    // pick steps[i].
+    for (int i = 0; i < _steps.length; i++) {
       final RoutineStep correct = _steps[i];
       final List<RoutineStep> distractors =
           _steps.where((s) => s.id != correct.id).toList()..shuffle(rng);
@@ -109,8 +110,20 @@ class _DoneStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (done.isEmpty) {
+      // "What comes first?" — a friendly start marker.
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: const <Widget>[
+          Icon(Icons.wb_sunny_rounded, size: 64, color: AppColors.gentleWarning),
+          SizedBox(height: 8),
+          Icon(Icons.help_outline_rounded, size: 40, color: AppColors.primary),
+        ],
+      );
+    }
     return Wrap(
       alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
       spacing: 8,
       runSpacing: 8,
       children: <Widget>[
@@ -119,10 +132,8 @@ class _DoneStrip extends StatelessWidget {
           if (i < done.length - 1)
             const Icon(Icons.arrow_forward_rounded, color: AppColors.textMuted),
         ],
-        if (done.isNotEmpty)
-          const Icon(Icons.arrow_forward_rounded, color: AppColors.primary),
-        if (done.isNotEmpty)
-          const Icon(Icons.help_outline_rounded, size: 40, color: AppColors.primary),
+        const Icon(Icons.arrow_forward_rounded, color: AppColors.primary),
+        const Icon(Icons.help_outline_rounded, size: 40, color: AppColors.primary),
       ],
     );
   }

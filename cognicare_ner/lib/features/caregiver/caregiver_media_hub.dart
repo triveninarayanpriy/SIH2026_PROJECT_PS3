@@ -399,7 +399,7 @@ class _CaregiverMediaHubState extends State<CaregiverMediaHub> with SingleTicker
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FB),
+      backgroundColor: AppColors.skyBg,
       appBar: AppBar(
         title: const Text('Content Studio'),
         bottom: TabBar(

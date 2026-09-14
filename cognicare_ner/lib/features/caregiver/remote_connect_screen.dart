@@ -54,7 +54,7 @@ class _RemoteConnectScreenState extends State<RemoteConnectScreen> {
   Widget build(BuildContext context) {
     final bool supported = NawalRemote.instance.isSupported;
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FB),
+      backgroundColor: AppColors.skyBg,
       appBar: AppBar(title: const Text('NAWAL Remote')),
       body: Center(
         child: ConstrainedBox(

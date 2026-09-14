@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/ai/difficulty_engine.dart';
 import '../../../core/services/game_content.dart';
 import '../../../core/services/local_db.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../core/widgets/platform_media.dart';
 import '../../../l10n/app_localizations.dart';
@@ -82,14 +83,16 @@ class _ObjectGameState extends State<ObjectGame> {
 
       rounds.add(GameRound(
         prompt: 'What is this?',
-        stimulus: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: MediaImage(
-            src: target.imageSrc,
-            width: 240,
-            height: 240,
-            fit: BoxFit.cover,
+        stimulus: Container(
+          width: 260,
+          height: 260,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.ink, width: 2.5),
           ),
+          clipBehavior: Clip.antiAlias,
+          child: MediaImage(src: target.imageSrc, fit: BoxFit.contain),
         ),
         answerId: target.id,
         choices: <GameChoice>[

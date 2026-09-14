@@ -79,18 +79,28 @@ List<FamilyMember> collectFamily() {
   ];
 }
 
-/// A round family photo (network image when available, else a warm avatar).
+/// A family photo. By default a round avatar (cover) for small tiles; set
+/// [circle] false to show the FULL photo (contain) in a rounded card — used for
+/// the big game stimulus so faces are never cut off.
 class FamilyPhoto extends StatelessWidget {
-  const FamilyPhoto({super.key, required this.src, required this.size, this.name});
+  const FamilyPhoto({
+    super.key,
+    required this.src,
+    required this.size,
+    this.name,
+    this.circle = true,
+  });
 
   final String? src;
   final double size;
   final String? name;
+  final bool circle;
 
   @override
   Widget build(BuildContext context) {
     final ImageProvider? provider = mediaImageProvider(src);
-    if (provider != null) {
+    if (provider == null) return _placeholder();
+    if (circle) {
       return ClipOval(
         child: Image(
           image: provider,
@@ -101,7 +111,23 @@ class FamilyPhoto extends StatelessWidget {
         ),
       );
     }
-    return _placeholder();
+    // Full photo, scaled to fit inside a rounded card (never cropped).
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.ink, width: 2.5),
+      ),
+      clipBehavior: Clip.antiAlias,
+      alignment: Alignment.center,
+      child: Image(
+        image: provider,
+        fit: BoxFit.contain,
+        errorBuilder: (_, _, _) => _placeholder(),
+      ),
+    );
   }
 
   Widget _placeholder() {
@@ -110,9 +136,10 @@ class FamilyPhoto extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.secondarySoft,
-        shape: BoxShape.circle,
+        shape: circle ? BoxShape.circle : BoxShape.rectangle,
+        borderRadius: circle ? null : BorderRadius.circular(20),
       ),
       alignment: Alignment.center,
       child: initial.isEmpty

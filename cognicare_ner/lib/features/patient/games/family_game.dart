@@ -89,8 +89,8 @@ class _FamilyGameState extends State<FamilyGame> {
       rounds.add(GameRound(
         prompt: 'Who is this?',
         promptAudioPath: LocalDb.mediaByType('game_prompt_faces').firstOrNull?.localPath,
-        // No name on the stimulus placeholder so it never reveals the answer.
-        stimulus: FamilyPhoto(src: target.photo, size: 240),
+        // Full photo (never cropped) so faces aren't cut off.
+        stimulus: FamilyPhoto(src: target.photo, size: 260, circle: false),
         answerId: target.name,
         choices: [
           for (final FamilyMember m in picks)

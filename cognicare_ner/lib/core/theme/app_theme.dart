@@ -45,7 +45,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
-      scaffoldBackgroundColor: AppColors.background,
+      scaffoldBackgroundColor: AppColors.skyBg,
       textTheme: AppText.textTheme(),
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.surface,
@@ -83,7 +83,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.background,
+        fillColor: AppColors.surface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(cardRadius),
           borderSide: const BorderSide(color: AppColors.border),

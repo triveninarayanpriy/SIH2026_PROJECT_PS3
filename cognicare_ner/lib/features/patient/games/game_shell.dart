@@ -216,10 +216,18 @@ class _GameShellState extends State<GameShell> {
     _locked = false;
     if (mounted) setState(() => _speaking = true);
     final String prompt = _localizedPrompt(context);
+    // 1) Speak the prompt fully (caregiver clip if mapped, else TTS).
     await TtsService.instance.play(prompt, audioPath: _round.promptAudioPath);
     if (!mounted || _finished || _leaving) return;
+    // 2) If this round has a stimulus clip to identify (e.g. a family voice),
+    //    play it fully next — strict order: prompt -> voice -> options.
+    final String? stim = _round.stimulusAudioPath;
+    if (stim != null && stim.isNotEmpty) {
+      await TtsService.instance.play('', audioPath: stim);
+      if (!mounted || _finished || _leaving) return;
+    }
     setState(() => _speaking = false);
-    // After the prompt finishes, offer one hands-free listen window. Tapping is
+    // 3) After audio finishes, offer one hands-free listen window. Tapping is
     // always available regardless.
     _startListenWindow();
   }

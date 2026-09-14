@@ -6,6 +6,7 @@ import '../../core/models/daily_care.dart';
 import '../../core/models/game_result.dart';
 import '../../core/services/local_db.dart';
 import '../../core/services/caregiver_note_service.dart' show kDomainLabels;
+import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text.dart';
 import '../../core/widgets/care_note_card.dart';
 import '../../core/widgets/clinical_charts.dart';
@@ -14,7 +15,7 @@ import 'doctor_repository.dart';
 
 const Color kClinicalTeal = Color(0xFF0D5C75);
 const Color kClinicalRed = Color(0xFFD64545);
-const Color kClinicalBg = Color(0xFFF1F5F9);
+const Color kClinicalBg = AppColors.skyBg;
 
 /// Read-only clinical view of one patient — teal medical theme with a triage
 /// header, AI clinical note, anomaly alerts, composite score trend, domain
@@ -170,7 +171,7 @@ class _DoctorPatientDetailState extends State<DoctorPatientDetail> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.ink, width: 2),
         boxShadow: <BoxShadow>[
           BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 3)),
         ],

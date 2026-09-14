@@ -282,15 +282,16 @@ class _PatientHomeState extends State<PatientHome> {
                                       subtitle: t.descObjects,
                                       onTap: () => _open(context, ObjectGame(patientId: widget.patientId)),
                                     ),
+                                  // Rest sits in the same grid so it aligns with
+                                  // the game tiles instead of spanning full width.
+                                  NawalListTile(
+                                    icon: Icons.self_improvement_rounded,
+                                    iconColor: AppColors.secondary,
+                                    title: t.relax,
+                                    subtitle: t.takeBreak,
+                                    onTap: () => _open(context, const CalmModeScreen()),
+                                  ),
                                 ],
-                              ),
-                              const SizedBox(height: 16),
-                              NawalListTile(
-                                icon: Icons.self_improvement_rounded,
-                                iconColor: AppColors.secondary,
-                                title: t.relax,
-                                subtitle: t.takeBreak,
-                                onTap: () => _open(context, const CalmModeScreen()),
                               ),
                               const SizedBox(height: 24),
                               BigButton(

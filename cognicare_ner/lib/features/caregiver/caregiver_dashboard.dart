@@ -35,11 +35,11 @@ class _WarmCard extends StatelessWidget {
         boxShadow: <BoxShadow>[
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 14,
+            blurRadius: 8,
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.6)),
+        border: Border.all(color: AppColors.ink, width: 2.5),
       ),
       child: child,
     );
@@ -104,7 +104,7 @@ class _CaregiverDashboardState extends State<CaregiverDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF7F2), // warm, calm background
+      backgroundColor: AppColors.skyBg,
       appBar: AppBar(
         title: const Text('How things are going'),
         elevation: 0,

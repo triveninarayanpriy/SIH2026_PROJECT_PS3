@@ -46,10 +46,18 @@ class GameRound {
     required this.choices,
     required this.answerId,
     this.promptAudioPath,
+    this.stimulusAudioPath,
   });
 
   final String prompt;
+
+  /// Optional caregiver clip for the spoken PROMPT (falls back to TTS).
   final String? promptAudioPath;
+
+  /// Optional audio that is the thing to identify (e.g. a family voice in the
+  /// voice game). Played automatically right AFTER the prompt, before options.
+  final String? stimulusAudioPath;
+
   final Widget stimulus;
   final List<GameChoice> choices;
   final String answerId;

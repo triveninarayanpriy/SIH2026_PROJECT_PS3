@@ -233,10 +233,10 @@ class DemoSeeder {
     await GameContent.saveMilestone(Milestone(
       id: 'demo-ms-2',
       title: 'First grandchild',
-      story: 'The day your first grandchild was born, the whole family gathered.',
-      question: 'Who was born on that happy day?',
-      answer: 'Your grandchild',
-      distractors: <String>['Your neighbour', 'A cousin'],
+      story: 'The year your first grandchild was born, the whole family gathered.',
+      question: 'In which year was your first grandchild born?',
+      answer: '1998',
+      distractors: <String>['1990', '2005'],
       imageUrl: 'assets/images/family/f2.png',
     ));
 
