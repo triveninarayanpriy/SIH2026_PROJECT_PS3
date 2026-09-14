@@ -6,6 +6,7 @@ import '../../../core/ai/difficulty_engine.dart';
 import '../../../core/services/local_db.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
+import '../../../l10n/app_localizations.dart';
 import 'family.dart';
 import 'game_models.dart';
 import 'game_shell.dart';
@@ -47,14 +48,15 @@ class _NameCompletionGameState extends State<NameCompletionGame> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations t = AppLocalizations.of(context);
     if (_faces.length < 2) {
-      return const AddMoreCard(
-        title: 'Complete the name',
-        message: 'Ask your family to add photos with names first.',
+      return AddMoreCard(
+        title: t.gameCompleteName,
+        message: t.addFamilyPhotos,
       );
     }
     return GameShell(
-      title: 'Complete the name',
+      title: t.gameCompleteName,
       game: _game,
       domain: 'language',
       difficulty: _difficulty,

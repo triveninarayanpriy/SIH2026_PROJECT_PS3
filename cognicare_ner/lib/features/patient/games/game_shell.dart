@@ -124,7 +124,7 @@ class _GameShellState extends State<GameShell> {
         _repeatPrompt();
         break;
       case RemoteButton.hint:
-        _hint('Take your time — listen again, then pick the matching answer.');
+        _hint(AppLocalizations.of(context).listenAgainHint);
         _repeatPrompt();
         break;
       case RemoteButton.call:
@@ -185,11 +185,16 @@ class _GameShellState extends State<GameShell> {
     final AppLocalizations t = AppLocalizations.of(context);
     switch (widget.game) {
       case 'pattern':
+      case 'routine':
         return t.whatComesNext;
       case 'faces':
         return t.whoIsThis;
       case 'voice':
         return t.whoseVoiceIsThis;
+      case 'name_completion':
+        return t.completeNamePrompt;
+      case 'objects':
+        return t.gameWhatIsThis;
       default:
         return _round.prompt;
     }
@@ -389,10 +394,9 @@ class _GameShellState extends State<GameShell> {
   /// Optional voice answer. Tapping is always the guaranteed path; this only
   /// adds a hands-free shortcut. Disabled while the prompt/feedback is speaking.
   Widget _micButton() {
+    final AppLocalizations t = AppLocalizations.of(context);
     final bool busy = _speaking || _locked;
-    final String label = _speaking
-        ? 'Listen…'
-        : (_listening ? 'Listening…' : 'Answer by voice');
+    final String label = _listening ? t.listeningLabel : t.answerByVoice;
     return BigButton(
       label: label,
       icon: _listening ? Icons.mic_rounded : Icons.mic_none_rounded,
@@ -459,14 +463,14 @@ class _RewardView extends StatelessWidget {
     return 1;
   }
 
-  String get _message {
+  String _message(AppLocalizations t) {
     switch (_stars) {
       case 3:
-        return 'Wonderful! You did it.';
+        return t.rewardWonderful;
       case 2:
-        return 'Great effort. Well done!';
+        return t.rewardGreat;
       default:
-        return 'Good try. You finished the game!';
+        return t.rewardGood;
     }
   }
 
@@ -483,6 +487,7 @@ class _RewardView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final MediaItem? photo = _familyPhoto();
+    final AppLocalizations t = AppLocalizations.of(context);
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -511,19 +516,19 @@ class _RewardView extends StatelessWidget {
               _photo(photo),
               const SizedBox(height: 28),
               Text(
-                _message,
+                _message(t),
                 textAlign: TextAlign.center,
                 style: AppText.gameQuestion(),
               ),
               const SizedBox(height: 8),
               Text(
-                'You got $correct out of $total.',
+                t.scoreOutOf(correct, total),
                 textAlign: TextAlign.center,
                 style: AppText.body(color: AppColors.textMuted),
               ),
               const SizedBox(height: 32),
               BigButton(
-                label: 'Done',
+                label: t.done,
                 icon: Icons.check_rounded,
                 color: AppColors.success,
                 onTap: () => Navigator.of(context).pop(),

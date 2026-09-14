@@ -7,6 +7,7 @@ import '../../../core/theme/app_text.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/big_button.dart';
 import '../../../core/widgets/platform_media.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// A family member assembled from labelled [MediaItem]s (grouped by label).
 @immutable
@@ -149,7 +150,7 @@ class AddMoreCard extends StatelessWidget {
               Text(message, textAlign: TextAlign.center, style: AppText.title()),
               const SizedBox(height: 32),
               BigButton(
-                label: 'Go back',
+                label: AppLocalizations.of(context).goBack,
                 icon: Icons.arrow_back_rounded,
                 color: AppColors.secondary,
                 onTap: () => Navigator.of(context).pop(),

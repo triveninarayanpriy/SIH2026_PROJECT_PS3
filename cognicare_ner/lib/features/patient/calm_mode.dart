@@ -22,6 +22,7 @@ class CalmModeScreen extends StatefulWidget {
 class _CalmModeScreenState extends State<CalmModeScreen> {
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations t = AppLocalizations.of(context);
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -38,9 +39,9 @@ class _CalmModeScreenState extends State<CalmModeScreen> {
                 padding: const EdgeInsets.all(AppTheme.screenPadding),
                 child: Column(
                   children: [
-                    Text('Relax & Unwind', style: AppText.title().copyWith(fontSize: 40)),
+                    Text(t.calmTitle, style: AppText.title().copyWith(fontSize: 40)),
                     const SizedBox(height: 8),
-                    Text('Take a moment to feel at peace.', style: AppText.body(color: AppColors.secondary)),
+                    Text(t.calmSubtitle, style: AppText.body(color: AppColors.secondary)),
                   ],
                 ),
               ),
@@ -50,7 +51,7 @@ class _CalmModeScreenState extends State<CalmModeScreen> {
                   children: [
                     _buildCategoryCard(
                       context,
-                      'Breathing Exercise',
+                      t.breathingExercise,
                       Icons.air,
                       AppColors.success,
                       () => Navigator.push(context, MaterialPageRoute(builder: (_) => const _BreathingExerciseScreen())),
@@ -58,7 +59,7 @@ class _CalmModeScreenState extends State<CalmModeScreen> {
                     const SizedBox(height: 16),
                     _buildCategoryCard(
                       context,
-                      'Family Photos',
+                      t.familyPhotos,
                       Icons.photo_library,
                       AppColors.primary,
                       () => Navigator.push(context, MaterialPageRoute(builder: (_) => const _SlideshowScreen())),
@@ -66,7 +67,7 @@ class _CalmModeScreenState extends State<CalmModeScreen> {
                     const SizedBox(height: 16),
                     _buildCategoryCard(
                       context,
-                      'Music',
+                      t.musicLabel,
                       Icons.music_note,
                       AppColors.secondary,
                       () => Navigator.push(context, MaterialPageRoute(builder: (_) => const _MusicPlayerScreen())),
@@ -74,11 +75,11 @@ class _CalmModeScreenState extends State<CalmModeScreen> {
                     const SizedBox(height: 16),
                     _buildCategoryCard(
                       context,
-                      'Videos',
+                      t.videosLabel,
                       Icons.video_library,
                       AppColors.gentleWarning,
                       () {
-                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No videos available.')));
+                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t.noVideos)));
                       }
                     ),
                   ],
@@ -157,8 +158,9 @@ class _BreathingExerciseScreenState extends State<_BreathingExerciseScreen> with
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations t = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Breathe'), backgroundColor: AppColors.primarySoft, elevation: 0),
+      appBar: AppBar(title: Text(t.breathe), backgroundColor: AppColors.primarySoft, elevation: 0),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -184,7 +186,7 @@ class _BreathingExerciseScreenState extends State<_BreathingExerciseScreen> with
                     ),
                     child: Center(
                       child: Text(
-                        _controller.status == AnimationStatus.forward ? 'Inhale' : 'Exhale',
+                        _controller.status == AnimationStatus.forward ? t.inhale : t.exhale,
                         style: AppText.title().copyWith(color: AppColors.secondary, fontSize: 32),
                       ),
                     ),
@@ -256,10 +258,11 @@ class _SlideshowScreenState extends State<_SlideshowScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations t = AppLocalizations.of(context);
     if (_photos.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Family Photos'), backgroundColor: AppColors.primarySoft, elevation: 0),
-        body: Center(child: Text('No photos found.', style: AppText.body())),
+        appBar: AppBar(title: Text(t.familyPhotos), backgroundColor: AppColors.primarySoft, elevation: 0),
+        body: Center(child: Text(t.noPhotos, style: AppText.body())),
       );
     }
     
@@ -359,8 +362,9 @@ class _MusicPlayerScreenState extends State<_MusicPlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations t = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Music'), backgroundColor: AppColors.primarySoft, elevation: 0),
+      appBar: AppBar(title: Text(t.musicLabel), backgroundColor: AppColors.primarySoft, elevation: 0),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -370,7 +374,7 @@ class _MusicPlayerScreenState extends State<_MusicPlayerScreen> {
           ),
         ),
         child: _tracks.isEmpty
-            ? Center(child: Text('No music found.', style: AppText.body()))
+            ? Center(child: Text(t.noMusic, style: AppText.body()))
             : ListView.builder(
                 padding: const EdgeInsets.all(AppTheme.screenPadding),
                 itemCount: _tracks.length,

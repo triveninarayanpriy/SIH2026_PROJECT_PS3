@@ -7,6 +7,7 @@ import '../../../core/services/game_content.dart';
 import '../../../core/services/local_db.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../core/widgets/platform_media.dart';
+import '../../../l10n/app_localizations.dart';
 import 'family.dart';
 import 'game_models.dart';
 import 'game_shell.dart';
@@ -46,14 +47,15 @@ class _ObjectGameState extends State<ObjectGame> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations t = AppLocalizations.of(context);
     if (_objects.length < 2) {
-      return const AddMoreCard(
-        title: 'What is this?',
+      return AddMoreCard(
+        title: t.gameWhatIsThis,
         message: 'Ask your family to add familiar objects with their names.',
       );
     }
     return GameShell(
-      title: 'What is this?',
+      title: t.gameWhatIsThis,
       game: _game,
       domain: 'attention',
       difficulty: _difficulty,

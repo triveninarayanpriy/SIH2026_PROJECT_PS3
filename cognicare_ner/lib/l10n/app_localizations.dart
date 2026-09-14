@@ -132,25 +132,25 @@ abstract class AppLocalizations {
   /// **'Whose voice is this?'**
   String get whoseVoiceIsThis;
 
-  /// Start / play button
+  /// No description provided for @play.
   ///
   /// In en, this message translates to:
   /// **'Play'**
   String get play;
 
-  /// Calm mode button
+  /// No description provided for @relax.
   ///
   /// In en, this message translates to:
   /// **'Relax'**
   String get relax;
 
-  /// Home / exit button
+  /// No description provided for @home.
   ///
   /// In en, this message translates to:
   /// **'Home'**
   String get home;
 
-  /// Play again button
+  /// No description provided for @again.
   ///
   /// In en, this message translates to:
   /// **'Again'**
@@ -168,13 +168,13 @@ abstract class AppLocalizations {
   /// **'No'**
   String get no;
 
-  /// Correct-answer praise
+  /// No description provided for @veryGood.
   ///
   /// In en, this message translates to:
   /// **'Very good!'**
   String get veryGood;
 
-  /// Gentle wrong-answer feedback
+  /// No description provided for @letsTryAgain.
   ///
   /// In en, this message translates to:
   /// **'Let\'s try again'**
@@ -203,6 +203,246 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You have an appointment'**
   String get reminderAppointment;
+
+  /// No description provided for @welcomeBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back!'**
+  String get welcomeBack;
+
+  /// No description provided for @hello.
+  ///
+  /// In en, this message translates to:
+  /// **'Hello,'**
+  String get hello;
+
+  /// No description provided for @gettingReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting ready…'**
+  String get gettingReady;
+
+  /// No description provided for @activitiesForToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Activities for today'**
+  String get activitiesForToday;
+
+  /// No description provided for @descPattern.
+  ///
+  /// In en, this message translates to:
+  /// **'Pattern matching exercise'**
+  String get descPattern;
+
+  /// No description provided for @descFaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Face recognition game'**
+  String get descFaces;
+
+  /// No description provided for @descVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice recognition exercise'**
+  String get descVoice;
+
+  /// No description provided for @gameCompleteName.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete the name'**
+  String get gameCompleteName;
+
+  /// No description provided for @descCompleteName.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish your family member\'s name'**
+  String get descCompleteName;
+
+  /// No description provided for @gameRemember.
+  ///
+  /// In en, this message translates to:
+  /// **'Do you remember?'**
+  String get gameRemember;
+
+  /// No description provided for @descRemember.
+  ///
+  /// In en, this message translates to:
+  /// **'Recall special life moments'**
+  String get descRemember;
+
+  /// No description provided for @descRoutine.
+  ///
+  /// In en, this message translates to:
+  /// **'Put the daily routine in order'**
+  String get descRoutine;
+
+  /// No description provided for @gameWhatIsThis.
+  ///
+  /// In en, this message translates to:
+  /// **'What is this?'**
+  String get gameWhatIsThis;
+
+  /// No description provided for @descObjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Name familiar objects'**
+  String get descObjects;
+
+  /// No description provided for @takeBreak.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a break and calm down'**
+  String get takeBreak;
+
+  /// No description provided for @answerByVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer by voice'**
+  String get answerByVoice;
+
+  /// No description provided for @listeningLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening…'**
+  String get listeningLabel;
+
+  /// No description provided for @done.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get done;
+
+  /// No description provided for @rewardWonderful.
+  ///
+  /// In en, this message translates to:
+  /// **'Wonderful! You did it.'**
+  String get rewardWonderful;
+
+  /// No description provided for @rewardGreat.
+  ///
+  /// In en, this message translates to:
+  /// **'Great effort. Well done!'**
+  String get rewardGreat;
+
+  /// No description provided for @rewardGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Good try. You finished the game!'**
+  String get rewardGood;
+
+  /// No description provided for @scoreOutOf.
+  ///
+  /// In en, this message translates to:
+  /// **'You got {correct} out of {total}.'**
+  String scoreOutOf(int correct, int total);
+
+  /// No description provided for @goBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Go back'**
+  String get goBack;
+
+  /// No description provided for @dismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get dismiss;
+
+  /// No description provided for @reminderItsTime.
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s time.'**
+  String get reminderItsTime;
+
+  /// No description provided for @calmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Relax & Unwind'**
+  String get calmTitle;
+
+  /// No description provided for @calmSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a moment to feel at peace.'**
+  String get calmSubtitle;
+
+  /// No description provided for @breathingExercise.
+  ///
+  /// In en, this message translates to:
+  /// **'Breathing Exercise'**
+  String get breathingExercise;
+
+  /// No description provided for @familyPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Family Photos'**
+  String get familyPhotos;
+
+  /// No description provided for @musicLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Music'**
+  String get musicLabel;
+
+  /// No description provided for @videosLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Videos'**
+  String get videosLabel;
+
+  /// No description provided for @inhale.
+  ///
+  /// In en, this message translates to:
+  /// **'Inhale'**
+  String get inhale;
+
+  /// No description provided for @exhale.
+  ///
+  /// In en, this message translates to:
+  /// **'Exhale'**
+  String get exhale;
+
+  /// No description provided for @breathe.
+  ///
+  /// In en, this message translates to:
+  /// **'Breathe'**
+  String get breathe;
+
+  /// No description provided for @noPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'No photos found.'**
+  String get noPhotos;
+
+  /// No description provided for @noMusic.
+  ///
+  /// In en, this message translates to:
+  /// **'No music found.'**
+  String get noMusic;
+
+  /// No description provided for @noVideos.
+  ///
+  /// In en, this message translates to:
+  /// **'No videos available.'**
+  String get noVideos;
+
+  /// No description provided for @completeNamePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Who is this? Complete the name.'**
+  String get completeNamePrompt;
+
+  /// No description provided for @listenAgainHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Take your time — listen again, then pick the matching answer.'**
+  String get listenAgainHint;
+
+  /// No description provided for @addFamilyPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask your family to add photos of family members.'**
+  String get addFamilyPhotos;
 }
 
 class _AppLocalizationsDelegate

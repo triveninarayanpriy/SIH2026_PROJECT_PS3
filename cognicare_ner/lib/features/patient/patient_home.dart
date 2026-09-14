@@ -82,6 +82,7 @@ class _PatientHomeState extends State<PatientHome> {
       context: context,
       barrierDismissible: false,
       builder: (context) {
+        final AppLocalizations t = AppLocalizations.of(context);
         return Dialog.fullscreen(
           child: Container(
             color: AppColors.primary.withOpacity(0.1),
@@ -98,13 +99,13 @@ class _PatientHomeState extends State<PatientHome> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'It is time for your ${reminder.type}.',
+                  t.reminderItsTime,
                   style: AppText.body().copyWith(fontSize: 32),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 64),
                 BigButton(
-                  label: 'Dismiss',
+                  label: t.dismiss,
                   icon: Icons.check_circle_rounded,
                   onTap: () {
                     _player.stop();
@@ -186,7 +187,7 @@ class _PatientHomeState extends State<PatientHome> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    profile == null ? 'Getting ready...' : 'Hello,',
+                                    profile == null ? t.gettingReady : t.hello,
                                     style: AppText.title().copyWith(color: Colors.white70, fontSize: 24),
                                   ),
                                   if (profile != null)
@@ -223,12 +224,12 @@ class _PatientHomeState extends State<PatientHome> {
                       : Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Text('Activities for today', style: AppText.title().copyWith(fontSize: 28)),
+                            Text(t.activitiesForToday, style: AppText.title().copyWith(fontSize: 28)),
                             const SizedBox(height: 24),
                             if (_enabled('pattern')) ...[
                               _GameCard(
                                 title: t.whatComesNext,
-                                description: 'Pattern matching exercise',
+                                description: t.descPattern,
                                 icon: Icons.extension_rounded,
                                 gradient: const LinearGradient(colors: AppColors.primaryGradient),
                                 onTap: () => _open(context, PatternGame(patientId: widget.patientId)),
@@ -238,7 +239,7 @@ class _PatientHomeState extends State<PatientHome> {
                             if (_enabled('faces')) ...[
                               _GameCard(
                                 title: t.whoIsThis,
-                                description: 'Face recognition game',
+                                description: t.descFaces,
                                 icon: Icons.face_rounded,
                                 gradient: const LinearGradient(colors: AppColors.secondaryGradient),
                                 onTap: () => _open(context, FamilyGame(patientId: widget.patientId)),
@@ -248,7 +249,7 @@ class _PatientHomeState extends State<PatientHome> {
                             if (_enabled('voice')) ...[
                               _GameCard(
                                 title: t.whoseVoiceIsThis,
-                                description: 'Voice recognition exercise',
+                                description: t.descVoice,
                                 icon: Icons.hearing_rounded,
                                 gradient: const LinearGradient(colors: AppColors.successGradient),
                                 onTap: () => _open(context, VoiceGame(patientId: widget.patientId)),
@@ -257,8 +258,8 @@ class _PatientHomeState extends State<PatientHome> {
                             ],
                             if (_enabled('name_completion')) ...[
                               _GameCard(
-                                title: 'Complete the name',
-                                description: 'Finish your family member’s name',
+                                title: t.gameCompleteName,
+                                description: t.descCompleteName,
                                 icon: Icons.abc_rounded,
                                 gradient: const LinearGradient(colors: AppColors.primaryGradient),
                                 onTap: () =>
@@ -268,8 +269,8 @@ class _PatientHomeState extends State<PatientHome> {
                             ],
                             if (_enabled('milestone')) ...[
                               _GameCard(
-                                title: 'Do you remember?',
-                                description: 'Recall special life moments',
+                                title: t.gameRemember,
+                                description: t.descRemember,
                                 icon: Icons.auto_stories_rounded,
                                 gradient: const LinearGradient(colors: AppColors.secondaryGradient),
                                 onTap: () =>
@@ -279,8 +280,8 @@ class _PatientHomeState extends State<PatientHome> {
                             ],
                             if (_enabled('routine')) ...[
                               _GameCard(
-                                title: 'What comes next?',
-                                description: 'Put the daily routine in order',
+                                title: t.whatComesNext,
+                                description: t.descRoutine,
                                 icon: Icons.checklist_rounded,
                                 gradient: const LinearGradient(colors: AppColors.successGradient),
                                 onTap: () =>
@@ -290,8 +291,8 @@ class _PatientHomeState extends State<PatientHome> {
                             ],
                             if (_enabled('objects')) ...[
                               _GameCard(
-                                title: 'What is this?',
-                                description: 'Name familiar objects',
+                                title: t.gameWhatIsThis,
+                                description: t.descObjects,
                                 icon: Icons.category_rounded,
                                 gradient: const LinearGradient(colors: AppColors.primaryGradient),
                                 onTap: () =>
@@ -302,7 +303,7 @@ class _PatientHomeState extends State<PatientHome> {
                             const SizedBox(height: 8),
                             _GameCard(
                               title: t.relax,
-                              description: 'Take a break and calm down',
+                              description: t.takeBreak,
                               icon: Icons.self_improvement_rounded,
                               gradient: const LinearGradient(colors: AppColors.calmGradient),
                               iconColor: AppColors.secondary,

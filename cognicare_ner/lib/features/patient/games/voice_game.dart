@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/ai/difficulty_engine.dart';
 import '../../../core/services/local_db.dart';
 import '../../../core/theme/app_text.dart';
+import '../../../l10n/app_localizations.dart';
 import 'audio_play_button.dart';
 import 'family.dart';
 import 'game_models.dart';
@@ -49,14 +50,15 @@ class _VoiceGameState extends State<VoiceGame> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations t = AppLocalizations.of(context);
     if (_targets.isEmpty || _allMembers.length < 2) {
-      return const AddMoreCard(
-        title: 'Whose voice is this?',
-        message: 'Ask your family to add photos and voice recordings.',
+      return AddMoreCard(
+        title: t.whoseVoiceIsThis,
+        message: t.addFamilyPhotos,
       );
     }
     return GameShell(
-      title: 'Whose voice is this?',
+      title: t.whoseVoiceIsThis,
       game: _game,
       domain: 'auditory',
       difficulty: _difficulty,

@@ -8,6 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/platform_media.dart';
+import '../../l10n/app_localizations.dart';
 import 'patient_home.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -179,7 +180,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                     ),
                                     const SizedBox(height: 24),
                                     Text(
-                                      'Welcome back!',
+                                      AppLocalizations.of(context).welcomeBack,
                                       textAlign: TextAlign.center,
                                       style: AppText.title(),
                                     ),

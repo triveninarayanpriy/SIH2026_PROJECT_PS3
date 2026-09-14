@@ -7,6 +7,7 @@ import '../../../core/services/game_content.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../core/widgets/platform_media.dart';
+import '../../../l10n/app_localizations.dart';
 import 'family.dart';
 import 'game_models.dart';
 import 'game_shell.dart';
@@ -47,14 +48,15 @@ class _RoutineGameState extends State<RoutineGame> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations t = AppLocalizations.of(context);
     if (_steps.length < 3) {
-      return const AddMoreCard(
-        title: 'What comes next?',
+      return AddMoreCard(
+        title: t.whatComesNext,
         message: 'Ask your family to set up the daily routine (at least 3 steps).',
       );
     }
     return GameShell(
-      title: 'What comes next?',
+      title: t.whatComesNext,
       game: _game,
       domain: 'executive',
       difficulty: _difficulty,

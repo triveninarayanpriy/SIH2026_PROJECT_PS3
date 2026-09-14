@@ -7,6 +7,7 @@ import '../../../core/services/game_content.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../core/widgets/platform_media.dart';
+import '../../../l10n/app_localizations.dart';
 import 'family.dart';
 import 'game_models.dart';
 import 'game_shell.dart';
@@ -47,14 +48,15 @@ class _MilestoneGameState extends State<MilestoneGame> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations t = AppLocalizations.of(context);
     if (_milestones.isEmpty) {
-      return const AddMoreCard(
-        title: 'Do you remember?',
+      return AddMoreCard(
+        title: t.gameRemember,
         message: 'Ask your family to add a few special memories to recall.',
       );
     }
     return GameShell(
-      title: 'Do you remember?',
+      title: t.gameRemember,
       game: _game,
       domain: 'memory',
       difficulty: _difficulty,

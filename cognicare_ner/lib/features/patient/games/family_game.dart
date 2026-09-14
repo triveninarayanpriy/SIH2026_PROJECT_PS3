@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/ai/difficulty_engine.dart';
 import '../../../core/services/local_db.dart';
 import '../../../core/theme/app_text.dart';
+import '../../../l10n/app_localizations.dart';
 import 'family.dart';
 import 'game_models.dart';
 import 'game_shell.dart';
@@ -49,14 +50,15 @@ class _FamilyGameState extends State<FamilyGame> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations t = AppLocalizations.of(context);
     if (_faces.length < 2) {
-      return const AddMoreCard(
-        title: 'Who is this?',
-        message: 'Ask your family to add photos of family members.',
+      return AddMoreCard(
+        title: t.whoIsThis,
+        message: t.addFamilyPhotos,
       );
     }
     return GameShell(
-      title: 'Who is this?',
+      title: t.whoIsThis,
       game: _game,
       domain: 'memory',
       difficulty: _difficulty,

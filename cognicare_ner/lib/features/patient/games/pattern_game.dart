@@ -6,6 +6,7 @@ import '../../../core/ai/difficulty_engine.dart';
 import '../../../core/services/local_db.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
+import '../../../l10n/app_localizations.dart';
 import 'game_models.dart';
 import 'game_shell.dart';
 
@@ -198,9 +199,10 @@ class _PatternGameState extends State<PatternGame> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations t = AppLocalizations.of(context);
     if (!_enabled) {
       return Scaffold(
-        appBar: AppBar(title: const Text('What comes next?')),
+        appBar: AppBar(title: Text(t.whatComesNext)),
         body: const Center(
           child: Padding(
             padding: EdgeInsets.all(20.0),
@@ -214,7 +216,7 @@ class _PatternGameState extends State<PatternGame> {
       );
     }
     return GameShell(
-      title: 'What comes next?',
+      title: t.whatComesNext,
       game: _game,
       domain: 'attention',
       difficulty: _difficulty,
