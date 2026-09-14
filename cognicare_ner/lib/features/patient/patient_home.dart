@@ -12,6 +12,7 @@ import '../../core/theme/app_text.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/big_button.dart';
 import '../../core/widgets/big_card.dart';
+import '../../core/widgets/nawal_ui.dart';
 import '../../core/widgets/remote_status_chip.dart';
 import '../../l10n/app_localizations.dart';
 import 'calm_mode.dart';
@@ -138,6 +139,7 @@ class _PatientHomeState extends State<PatientHome> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.skyBg,
       body: ValueListenableBuilder<Box<PatientProfile>>(
         valueListenable: LocalDb.profileBox.listenable(),
         builder: (context, _, _) {
@@ -160,12 +162,12 @@ class _PatientHomeState extends State<PatientHome> {
                 expandedHeight: 180,
                 floating: false,
                 pinned: true,
-                backgroundColor: AppColors.primary,
+                backgroundColor: AppColors.ink,
                 flexibleSpace: FlexibleSpaceBar(
                   background: Container(
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
-                        colors: AppColors.primaryGradient,
+                        colors: <Color>[AppColors.ink, AppColors.inkDark],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -221,103 +223,85 @@ class _PatientHomeState extends State<PatientHome> {
                             style: AppText.body(color: AppColors.textMuted),
                           ),
                         )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(t.activitiesForToday, style: AppText.title().copyWith(fontSize: 28)),
-                            const SizedBox(height: 24),
-                            if (_enabled('pattern')) ...[
-                              _GameCard(
-                                title: t.whatComesNext,
-                                description: t.descPattern,
-                                icon: Icons.extension_rounded,
-                                gradient: const LinearGradient(colors: AppColors.primaryGradient),
-                                onTap: () => _open(context, PatternGame(patientId: widget.patientId)),
+                      : NawalPage(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(t.activitiesForToday,
+                                  style: AppText.title().copyWith(fontSize: 28, color: AppColors.inkDark)),
+                              const SizedBox(height: 20),
+                              ResponsiveCardGrid(
+                                columns: 2,
+                                children: <Widget>[
+                                  if (_enabled('pattern'))
+                                    NawalListTile(
+                                      icon: Icons.extension_rounded,
+                                      title: t.whatComesNext,
+                                      subtitle: t.descPattern,
+                                      onTap: () => _open(context, PatternGame(patientId: widget.patientId)),
+                                    ),
+                                  if (_enabled('faces'))
+                                    NawalListTile(
+                                      icon: Icons.face_rounded,
+                                      title: t.whoIsThis,
+                                      subtitle: t.descFaces,
+                                      onTap: () => _open(context, FamilyGame(patientId: widget.patientId)),
+                                    ),
+                                  if (_enabled('voice'))
+                                    NawalListTile(
+                                      icon: Icons.hearing_rounded,
+                                      title: t.whoseVoiceIsThis,
+                                      subtitle: t.descVoice,
+                                      onTap: () => _open(context, VoiceGame(patientId: widget.patientId)),
+                                    ),
+                                  if (_enabled('name_completion'))
+                                    NawalListTile(
+                                      icon: Icons.abc_rounded,
+                                      title: t.gameCompleteName,
+                                      subtitle: t.descCompleteName,
+                                      onTap: () => _open(context, NameCompletionGame(patientId: widget.patientId)),
+                                    ),
+                                  if (_enabled('milestone'))
+                                    NawalListTile(
+                                      icon: Icons.auto_stories_rounded,
+                                      title: t.gameRemember,
+                                      subtitle: t.descRemember,
+                                      onTap: () => _open(context, MilestoneGame(patientId: widget.patientId)),
+                                    ),
+                                  if (_enabled('routine'))
+                                    NawalListTile(
+                                      icon: Icons.checklist_rounded,
+                                      title: t.whatComesNext,
+                                      subtitle: t.descRoutine,
+                                      onTap: () => _open(context, RoutineGame(patientId: widget.patientId)),
+                                    ),
+                                  if (_enabled('objects'))
+                                    NawalListTile(
+                                      icon: Icons.category_rounded,
+                                      title: t.gameWhatIsThis,
+                                      subtitle: t.descObjects,
+                                      onTap: () => _open(context, ObjectGame(patientId: widget.patientId)),
+                                    ),
+                                ],
                               ),
                               const SizedBox(height: 16),
-                            ],
-                            if (_enabled('faces')) ...[
-                              _GameCard(
-                                title: t.whoIsThis,
-                                description: t.descFaces,
-                                icon: Icons.face_rounded,
-                                gradient: const LinearGradient(colors: AppColors.secondaryGradient),
-                                onTap: () => _open(context, FamilyGame(patientId: widget.patientId)),
+                              NawalListTile(
+                                icon: Icons.self_improvement_rounded,
+                                iconColor: AppColors.secondary,
+                                title: t.relax,
+                                subtitle: t.takeBreak,
+                                onTap: () => _open(context, const CalmModeScreen()),
                               ),
-                              const SizedBox(height: 16),
-                            ],
-                            if (_enabled('voice')) ...[
-                              _GameCard(
-                                title: t.whoseVoiceIsThis,
-                                description: t.descVoice,
-                                icon: Icons.hearing_rounded,
-                                gradient: const LinearGradient(colors: AppColors.successGradient),
-                                onTap: () => _open(context, VoiceGame(patientId: widget.patientId)),
+                              const SizedBox(height: 24),
+                              BigButton(
+                                label: 'VR Simulation (Experimental)',
+                                icon: Icons.spa_rounded,
+                                color: AppColors.ink,
+                                onTap: () => _open(context, const SimulationModeScreen()),
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 32),
                             ],
-                            if (_enabled('name_completion')) ...[
-                              _GameCard(
-                                title: t.gameCompleteName,
-                                description: t.descCompleteName,
-                                icon: Icons.abc_rounded,
-                                gradient: const LinearGradient(colors: AppColors.primaryGradient),
-                                onTap: () =>
-                                    _open(context, NameCompletionGame(patientId: widget.patientId)),
-                              ),
-                              const SizedBox(height: 16),
-                            ],
-                            if (_enabled('milestone')) ...[
-                              _GameCard(
-                                title: t.gameRemember,
-                                description: t.descRemember,
-                                icon: Icons.auto_stories_rounded,
-                                gradient: const LinearGradient(colors: AppColors.secondaryGradient),
-                                onTap: () =>
-                                    _open(context, MilestoneGame(patientId: widget.patientId)),
-                              ),
-                              const SizedBox(height: 16),
-                            ],
-                            if (_enabled('routine')) ...[
-                              _GameCard(
-                                title: t.whatComesNext,
-                                description: t.descRoutine,
-                                icon: Icons.checklist_rounded,
-                                gradient: const LinearGradient(colors: AppColors.successGradient),
-                                onTap: () =>
-                                    _open(context, RoutineGame(patientId: widget.patientId)),
-                              ),
-                              const SizedBox(height: 16),
-                            ],
-                            if (_enabled('objects')) ...[
-                              _GameCard(
-                                title: t.gameWhatIsThis,
-                                description: t.descObjects,
-                                icon: Icons.category_rounded,
-                                gradient: const LinearGradient(colors: AppColors.primaryGradient),
-                                onTap: () =>
-                                    _open(context, ObjectGame(patientId: widget.patientId)),
-                              ),
-                              const SizedBox(height: 16),
-                            ],
-                            const SizedBox(height: 8),
-                            _GameCard(
-                              title: t.relax,
-                              description: t.takeBreak,
-                              icon: Icons.self_improvement_rounded,
-                              gradient: const LinearGradient(colors: AppColors.calmGradient),
-                              iconColor: AppColors.secondary,
-                              onTap: () => _open(context, const CalmModeScreen()),
-                            ),
-                            const SizedBox(height: 24),
-                            BigButton(
-                              label: 'VR Simulation (Experimental)',
-                              icon: Icons.spa_rounded,
-                              color: AppColors.secondary,
-                              onTap: () => _open(context, const SimulationModeScreen()),
-                            ),
-                            const SizedBox(height: 32),
-                          ],
+                          ),
                         ),
                 ),
               ),
@@ -342,78 +326,4 @@ class _UnlinkButton extends StatelessWidget {
   }
 }
 
-class _GameCard extends StatelessWidget {
-  const _GameCard({
-    required this.title,
-    required this.description,
-    required this.icon,
-    required this.gradient,
-    this.iconColor = Colors.white,
-    required this.onTap,
-  });
-
-  final String title;
-  final String description;
-  final IconData icon;
-  final Gradient gradient;
-  final Color iconColor;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: title,
-      child: Material(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              border: Border.all(color: AppColors.border),
-              borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-              boxShadow: const [
-                BoxShadow(
-                  color: AppColors.shadow,
-                  blurRadius: 10,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    gradient: gradient,
-                    borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-                  ),
-                  child: Center(
-                    child: Icon(icon, size: 40, color: iconColor),
-                  ),
-                ),
-                const SizedBox(width: 24),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title, style: AppText.button().copyWith(color: AppColors.text, fontSize: 26)),
-                      const SizedBox(height: 8),
-                      Text(description, style: AppText.body(color: AppColors.textMuted).copyWith(fontSize: 20)),
-                    ],
-                  ),
-                ),
-                const Icon(Icons.arrow_forward_ios_rounded, color: AppColors.primary, size: 32),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 

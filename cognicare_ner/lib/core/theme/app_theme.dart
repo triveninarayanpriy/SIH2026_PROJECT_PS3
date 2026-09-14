@@ -19,6 +19,17 @@ class AppTheme {
   /// Standard large icon size (dp).
   static const double iconSize = 40;
 
+  /// Max content width on wide (web/tablet) screens; content is centered.
+  static const double maxContentWidth = 1080;
+
+  /// Breakpoint above which we use web/tablet layouts (grids, two-pane…).
+  static bool isWide(BuildContext context) =>
+      MediaQuery.sizeOf(context).width >= 800;
+
+  /// True on a narrow phone-width screen.
+  static bool isPhone(BuildContext context) =>
+      MediaQuery.sizeOf(context).width < 800;
+
   static ThemeData light() {
     const ColorScheme scheme = ColorScheme.light(
       primary: AppColors.primary,

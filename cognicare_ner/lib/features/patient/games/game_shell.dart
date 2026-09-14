@@ -19,6 +19,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/big_button.dart';
 import '../../../core/widgets/big_progress_dots.dart';
 import '../../../core/widgets/gentle_feedback.dart';
+import '../../../core/widgets/nawal_ui.dart';
 import '../../../core/widgets/remote_status_chip.dart';
 import '../../../core/widgets/speak_label.dart';
 import '../../../l10n/app_localizations.dart';
@@ -351,6 +352,7 @@ class _GameShellState extends State<GameShell> {
     }
     final String prompt = _localizedPrompt(context);
     return Scaffold(
+      backgroundColor: AppColors.skyBg,
       appBar: AppBar(
         title: Text(widget.title),
         actions: const <Widget>[
@@ -359,7 +361,9 @@ class _GameShellState extends State<GameShell> {
         ],
       ),
       body: SafeArea(
-        child: Padding(
+        child: NawalPage(
+          maxWidth: 640,
+          child: Padding(
           padding: const EdgeInsets.all(AppTheme.screenPadding),
           child: Column(
             children: [
@@ -386,6 +390,7 @@ class _GameShellState extends State<GameShell> {
               _micButton(),
             ],
           ),
+        ),
         ),
       ),
     );

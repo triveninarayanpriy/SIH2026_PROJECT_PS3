@@ -7,8 +7,8 @@ import '../../core/services/local_db.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/widgets/big_button.dart';
 import '../../core/widgets/big_card.dart';
+import '../../core/widgets/nawal_ui.dart';
 import '../../core/widgets/remote_status_chip.dart';
 import 'caregiver_alert_banner.dart';
 import 'caregiver_dashboard.dart';
@@ -32,6 +32,7 @@ class CaregiverHome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.skyBg,
       appBar: AppBar(
         title: const Text('Caregiver Hub'),
         actions: [
@@ -45,7 +46,8 @@ class CaregiverHome extends StatelessWidget {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppTheme.screenPadding),
-        child: ValueListenableBuilder<Box<PatientProfile>>(
+        child: NawalPage(
+          child: ValueListenableBuilder<Box<PatientProfile>>(
           valueListenable: LocalDb.profileBox.listenable(),
           builder: (context, _, _) {
             final PatientProfile? profile = LocalDb.getProfile(patientId);
@@ -56,7 +58,7 @@ class CaregiverHome extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: AppColors.primaryGradient),
+                    gradient: const LinearGradient(colors: <Color>[AppColors.ink, AppColors.inkDark]),
                     borderRadius: BorderRadius.circular(AppTheme.cardRadius),
                   ),
                   child: Row(
@@ -87,58 +89,52 @@ class CaregiverHome extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                Text('Quick Actions', style: AppText.title().copyWith(fontSize: 24)),
+                Text('Quick Actions', style: AppText.title().copyWith(fontSize: 24, color: AppColors.inkDark)),
                 const SizedBox(height: 16),
-                _ActionCard(
-                  title: 'View Progress',
-                  description: 'Track cognitive stats and history',
-                  icon: Icons.insights_rounded,
-                  color: AppColors.primary,
-                  onTap: () => _open(context, CaregiverDashboard(patientId: patientId)),
-                ),
-                const SizedBox(height: 16),
-                _ActionCard(
-                  title: 'Content Studio',
-                  description: 'Photos, voices, music, welcome, prompts & game content',
-                  icon: Icons.perm_media_rounded,
-                  color: AppColors.secondary,
-                  onTap: () => _open(context, CaregiverMediaHub(patientId: patientId)),
-                ),
-                const SizedBox(height: 16),
-                _ActionCard(
-                  title: 'Reminders',
-                  description: 'Set medication and daily tasks',
-                  icon: Icons.alarm_rounded,
-                  color: AppColors.gentleWarning,
-                  onTap: () => _open(context, CaregiverRemindersScreen(patientId: patientId)),
-                ),
-                const SizedBox(height: 16),
-                _ActionCard(
-                  title: 'Game Settings',
-                  description: 'Configure game difficulty and rules',
-                  icon: Icons.videogame_asset_rounded,
-                  color: AppColors.success,
-                  onTap: () => _open(context, const CaregiverGameConfigScreen()),
-                ),
-                const SizedBox(height: 16),
-                _ActionCard(
-                  title: 'NAWAL Remote',
-                  description: 'Pair the Bluetooth remote and see its buttons',
-                  icon: Icons.gamepad_rounded,
-                  color: AppColors.secondaryDark,
-                  onTap: () => _open(context, const RemoteConnectScreen()),
-                ),
-                const SizedBox(height: 16),
-                _ActionCard(
-                  title: 'Language',
-                  description: 'Change application language',
-                  icon: Icons.language_rounded,
-                  color: AppColors.primaryDark,
-                  onTap: () => _open(context, const LanguageSelectorScreen()),
+                ResponsiveCardGrid(
+                  columns: 2,
+                  children: <Widget>[
+                    NawalListTile(
+                      icon: Icons.insights_rounded,
+                      title: 'View Progress',
+                      subtitle: 'Track cognitive stats and history',
+                      onTap: () => _open(context, CaregiverDashboard(patientId: patientId)),
+                    ),
+                    NawalListTile(
+                      icon: Icons.perm_media_rounded,
+                      title: 'Content Studio',
+                      subtitle: 'Photos, voices, music, welcome & game content',
+                      onTap: () => _open(context, CaregiverMediaHub(patientId: patientId)),
+                    ),
+                    NawalListTile(
+                      icon: Icons.alarm_rounded,
+                      title: 'Reminders',
+                      subtitle: 'Set medication and daily tasks',
+                      onTap: () => _open(context, CaregiverRemindersScreen(patientId: patientId)),
+                    ),
+                    NawalListTile(
+                      icon: Icons.videogame_asset_rounded,
+                      title: 'Game Settings',
+                      subtitle: 'Configure game difficulty and rules',
+                      onTap: () => _open(context, const CaregiverGameConfigScreen()),
+                    ),
+                    NawalListTile(
+                      icon: Icons.gamepad_rounded,
+                      title: 'NAWAL Remote',
+                      subtitle: 'Pair the Bluetooth remote and see its buttons',
+                      onTap: () => _open(context, const RemoteConnectScreen()),
+                    ),
+                    NawalListTile(
+                      icon: Icons.language_rounded,
+                      title: 'Language',
+                      subtitle: 'Change application language',
+                      onTap: () => _open(context, const LanguageSelectorScreen()),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 24),
                 BigCard(
-                  color: AppColors.primarySoft,
+                  color: AppColors.surface,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -161,71 +157,6 @@ class CaregiverHome extends StatelessWidget {
             );
           },
         ),
-      ),
-    );
-  }
-}
-
-class _ActionCard extends StatelessWidget {
-  const _ActionCard({
-    required this.title,
-    required this.description,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-
-  final String title;
-  final String description;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            border: Border.all(color: AppColors.border),
-            borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-            boxShadow: const [
-              BoxShadow(
-                color: AppColors.shadow,
-                blurRadius: 8,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 36, color: color),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: AppText.button().copyWith(color: AppColors.text)),
-                    const SizedBox(height: 4),
-                    Text(description, style: AppText.body(color: AppColors.textMuted)),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right_rounded, color: AppColors.border, size: 32),
-            ],
-          ),
         ),
       ),
     );

@@ -31,12 +31,15 @@ class GameTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final BoxDecoration decoration = BoxDecoration(
-      color: highlight ? AppColors.primarySoft : AppColors.surface,
+      color: highlight ? AppColors.skyBg.withValues(alpha: 0.35) : AppColors.surface,
       borderRadius: BorderRadius.circular(AppTheme.cardRadius),
       border: Border.all(
-        color: highlight ? AppColors.primary : AppColors.border,
-        width: highlight ? 2.5 : 1.5,
+        color: AppColors.ink,
+        width: highlight ? 3 : 2.5,
       ),
+      boxShadow: const <BoxShadow>[
+        BoxShadow(color: Color(0x14000000), blurRadius: 6, offset: Offset(0, 3)),
+      ],
     );
 
     final Widget box = ConstrainedBox(

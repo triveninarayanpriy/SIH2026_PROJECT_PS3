@@ -32,11 +32,12 @@ class BigCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: color ?? AppColors.surface,
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        border: Border.all(color: AppColors.ink, width: 2.5),
         boxShadow: const [
           BoxShadow(
-            color: AppColors.shadowDark,
-            blurRadius: 16,
-            offset: Offset(0, 6),
+            color: Color(0x14000000),
+            blurRadius: 8,
+            offset: Offset(0, 4),
           ),
         ],
       ),

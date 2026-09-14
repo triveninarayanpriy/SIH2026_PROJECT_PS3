@@ -17,6 +17,13 @@ class AppColors {
   static const Color textMuted = Color(0xFF6B7280);     // Softer muted
   static const Color border = Color(0xFFE5E7EB);
 
+  // ---- NAWAL design language (reference: sky-blue page, white cards with a
+  // bold navy border, black text). Used by the friendly patient/landing side.
+  static const Color skyBg = Color(0xFF92D6EF);         // page background
+  static const Color skyBgSoft = Color(0xFFB9E5F4);     // lighter tint
+  static const Color ink = Color(0xFF1A3C5A);           // deep navy (borders/headers)
+  static const Color inkDark = Color(0xFF12293D);
+
   // Soft brand tints
   static const Color primarySoft = Color(0xFFE3F2FD);
   static const Color secondarySoft = Color(0xFFE0F2F1);
