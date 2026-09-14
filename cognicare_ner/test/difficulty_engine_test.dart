@@ -1,5 +1,5 @@
-import 'package:cognicare_ner/core/ai/difficulty_engine.dart';
-import 'package:cognicare_ner/core/models/game_result.dart';
+import 'package:nawal/core/ai/difficulty_engine.dart';
+import 'package:nawal/core/models/game_result.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 GameResult _r(int correct, int total, {DateTime? at}) => GameResult(

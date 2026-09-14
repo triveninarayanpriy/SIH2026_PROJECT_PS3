@@ -1,4 +1,4 @@
-import 'package:cognicare_ner/core/ai/anomaly_detector.dart';
+import 'package:nawal/core/ai/anomaly_detector.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

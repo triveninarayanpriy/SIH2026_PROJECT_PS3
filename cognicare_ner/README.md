@@ -4,7 +4,7 @@
 built for SIH 2026 (PS 26003), tuned for India's North Eastern Region.
 
 One Flutter codebase, three roles (Patient · Caregiver · Doctor), on Android and
-Web. Live demo: **https://cognicare-ner.web.app**
+Web. Live demo: **https://nawal.web.app**
 
 ## What it does
 

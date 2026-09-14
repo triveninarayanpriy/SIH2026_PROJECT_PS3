@@ -14,7 +14,7 @@ import 'features/doctor/doctor_gate.dart';
 import 'features/patient/patient_gate.dart';
 import 'l10n/app_localizations.dart';
 
-/// Root widget for CogniCare NER.
+/// Root widget for NAWAL.
 ///
 /// Two modes:
 ///  * Locked per-role build (`roleSwitching == false`): branches on the
@@ -24,8 +24,8 @@ import 'l10n/app_localizations.dart';
 ///
 /// The active locale is driven by [LocaleController] (patient app sets it from
 /// the patient's language; caregiver/doctor default to English).
-class CogniCareApp extends StatelessWidget {
-  const CogniCareApp({
+class NawalApp extends StatelessWidget {
+  const NawalApp({
     super.key,
     required this.role,
     this.roleSwitching = false,
@@ -140,7 +140,7 @@ class _SwitchRoleButton extends StatelessWidget {
     // pushReplacement and removed the original home route — popUntil(isFirst)
     // alone would then do nothing.
     LocalDb.clearActiveRole();
-    final NavigatorState? nav = CogniCareApp.navKey.currentState;
+    final NavigatorState? nav = NawalApp.navKey.currentState;
     if (nav == null) return;
     nav.pushAndRemoveUntil(
       MaterialPageRoute<void>(builder: (_) => const _SwitchableHome()),

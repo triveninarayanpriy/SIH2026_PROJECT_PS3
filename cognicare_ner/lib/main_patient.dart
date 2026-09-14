@@ -36,5 +36,5 @@ Future<void> main() async {
   await DemoSeeder.maybeLoadFromEnvironment();
 
   const String role = String.fromEnvironment('ROLE', defaultValue: 'patient');
-  runApp(const CogniCareApp(role: role));
+  runApp(const NawalApp(role: role));
 }

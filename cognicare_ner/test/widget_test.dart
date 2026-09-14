@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cognicare_ner/core/widgets/big_button.dart';
+import 'package:nawal/core/widgets/big_button.dart';
 
 void main() {
   testWidgets('BigButton shows its label and responds to a tap',

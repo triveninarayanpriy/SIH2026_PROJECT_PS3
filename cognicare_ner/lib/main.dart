@@ -44,5 +44,5 @@ void main() async {
   // a no-op on web). Games work by touch whether or not it ever connects.
   NawalRemote.instance.start();
 
-  runApp(const CogniCareApp(role: '', roleSwitching: true));
+  runApp(const NawalApp(role: '', roleSwitching: true));
 }

@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Central access point for CogniCare NER's Firestore data.
+/// Central access point for NAWAL's Firestore data.
 ///
 /// Collections mirror the platform architecture (§4.1 "Suggested data model"):
 ///

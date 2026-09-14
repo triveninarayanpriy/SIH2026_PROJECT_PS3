@@ -120,7 +120,7 @@ String buildWeeklyReportHtml(DoctorPatientData data) {
 </style>
 <script>window.onload=function(){setTimeout(function(){window.print();},350);};</script>
 </head><body>
-  <h1>CogniCare NER — Weekly Report</h1>
+  <h1>NAWAL — Weekly Report</h1>
   <p class="sub">$name &middot; Stage $stage &middot; Age $age${region.isEmpty ? '' : ' &middot; $region'}<br>
      Week of ${dateFmt.format(weekAgo)} – ${dateFmt.format(now)}</p>
 
@@ -141,7 +141,7 @@ String buildWeeklyReportHtml(DoctorPatientData data) {
     <th class="num">Meals</th></tr>
   $careRows</table>
 
-  <p class="foot">Generated ${dateTimeFmt.format(now)} by CogniCare NER.
+  <p class="foot">Generated ${dateTimeFmt.format(now)} by NAWAL.
      This summary is for information only and does not replace a clinical
      assessment. Please bring it to your appointment.</p>
 </body></html>
