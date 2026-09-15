@@ -16,13 +16,13 @@ class _GameDef {
 }
 
 const List<_GameDef> _games = <_GameDef>[
-  _GameDef('pattern', 'Pattern Match', 'Attention', Icons.grid_view_rounded, AppColors.primary),
-  _GameDef('faces', 'Family Faces', 'Memory', Icons.face_rounded, AppColors.secondary),
-  _GameDef('voice', 'Voice Recognition', 'Listening', Icons.record_voice_over_rounded, AppColors.success),
+  _GameDef('pattern', 'Pattern Sequencing', 'Attention', Icons.grid_view_rounded, AppColors.primary),
+  _GameDef('faces', 'Face Recognition', 'Memory', Icons.face_rounded, AppColors.secondary),
+  _GameDef('voice', 'Voice Recognition', 'Auditory Processing', Icons.record_voice_over_rounded, AppColors.success),
   _GameDef('name_completion', 'Name Completion', 'Language', Icons.abc_rounded, AppColors.primaryDark),
-  _GameDef('milestone', 'Memories to Recall', 'Memory', Icons.auto_stories_rounded, AppColors.secondaryDark),
-  _GameDef('routine', 'Daily Routine', 'Sequencing', Icons.checklist_rounded, AppColors.gentleWarning),
-  _GameDef('objects', 'Object Identification', 'Attention', Icons.category_rounded, AppColors.success),
+  _GameDef('milestone', 'Episodic Recall', 'Episodic Memory', Icons.auto_stories_rounded, AppColors.secondaryDark),
+  _GameDef('routine', 'Routine Sequencing', 'Executive Function', Icons.checklist_rounded, AppColors.gentleWarning),
+  _GameDef('objects', 'Object Naming', 'Recognition', Icons.category_rounded, AppColors.success),
 ];
 
 /// Professional caregiver control panel for each game: on/off, adaptive vs a

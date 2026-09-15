@@ -27,6 +27,7 @@
   "gameRemember": "আপনার কি মনে আছে?",
   "descRemember": "জীবনের বিশেষ মুহূর্তগুলি মনে করুন",
   "descRoutine": "দৈনন্দিন রুটিন ক্রম অনুযায়ী সাজান",
+  "gameDailyRoutine": "দৈনন্দিন রুটিন",
   "gameWhatIsThis": "এটি কী?",
   "descObjects": "পরিচিত জিনিসের নাম বলুন",
   "takeBreak": "একটু বিশ্রাম নিন ও শান্ত হোন",
@@ -60,5 +61,14 @@
   "noVideos": "কোনো ভিডিও নেই।",
   "completeNamePrompt": "ইনি কে? নামটি সম্পূর্ণ করুন।",
   "listenAgainHint": "ধীরে-সুস্থে — আবার শুনুন, তারপর সঠিক উত্তর বেছে নিন।",
-  "addFamilyPhotos": "আপনার পরিবারকে সদস্যদের ছবি যোগ করতে বলুন।"
+  "addFamilyPhotos": "আপনার পরিবারকে সদস্যদের ছবি যোগ করতে বলুন।",
+  "rolePatient": "রোগী",
+  "roleCaregiver": "পরিচর্যাকারী",
+  "roleDoctor": "ডাক্তার",
+  "rolePatientDesc": "খেলা ও অনুশীলন করুন",
+  "roleCaregiverDesc": "যত্ন পরিচালনা করুন ও অগ্রগতি দেখুন",
+  "roleDoctorDesc": "রোগী ও রিপোর্ট পর্যবেক্ষণ করুন",
+  "tagline": "পুরনো স্মৃতি দিয়ে গড়া নতুন জীবন",
+  "switchAnytime": "আপনি যেকোনো সময় ভূমিকা বদলাতে পারেন",
+  "selectLanguage": "ভাষা নির্বাচন করুন"
 }

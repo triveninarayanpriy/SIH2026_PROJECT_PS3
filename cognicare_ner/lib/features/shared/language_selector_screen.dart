@@ -5,6 +5,7 @@ import '../../core/services/locale_controller.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text.dart';
 import '../../core/theme/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 
 class LanguageSelectorScreen extends StatelessWidget {
   const LanguageSelectorScreen({super.key});
@@ -12,8 +13,9 @@ class LanguageSelectorScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.skyBg,
       appBar: AppBar(
-        title: const Text('Select Language'),
+        title: Text(AppLocalizations.of(context).selectLanguage),
       ),
       body: ListView.separated(
         padding: const EdgeInsets.all(AppTheme.screenPadding),

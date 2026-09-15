@@ -90,6 +90,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get descRoutine => 'दैनिक दिनचर्या को क्रम में लगाएँ';
 
   @override
+  String get gameDailyRoutine => 'दैनिक दिनचर्या';
+
+  @override
   String get gameWhatIsThis => 'यह क्या है?';
 
   @override
@@ -175,4 +178,31 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get addFamilyPhotos =>
       'अपने परिवार से सदस्यों की तस्वीरें जोड़ने को कहें।';
+
+  @override
+  String get rolePatient => 'रोगी';
+
+  @override
+  String get roleCaregiver => 'देखभालकर्ता';
+
+  @override
+  String get roleDoctor => 'डॉक्टर';
+
+  @override
+  String get rolePatientDesc => 'खेल और अभ्यास खेलें';
+
+  @override
+  String get roleCaregiverDesc => 'देखभाल प्रबंधित करें और प्रगति देखें';
+
+  @override
+  String get roleDoctorDesc => 'मरीज़ों और रिपोर्ट पर नज़र रखें';
+
+  @override
+  String get tagline => 'पुरानी यादों से बना एक नया जीवन';
+
+  @override
+  String get switchAnytime => 'आप कभी भी भूमिका बदल सकते हैं';
+
+  @override
+  String get selectLanguage => 'भाषा चुनें';
 }

@@ -30,6 +30,7 @@
   "gameRemember": "Do you remember?",
   "descRemember": "Recall special life moments",
   "descRoutine": "Put the daily routine in order",
+  "gameDailyRoutine": "Daily routine",
   "gameWhatIsThis": "What is this?",
   "descObjects": "Name familiar objects",
   "takeBreak": "Take a break and calm down",
@@ -63,5 +64,14 @@
   "noVideos": "No videos available.",
   "completeNamePrompt": "Who is this? Complete the name.",
   "listenAgainHint": "Take your time — listen again, then pick the matching answer.",
-  "addFamilyPhotos": "Ask your family to add photos of family members."
+  "addFamilyPhotos": "Ask your family to add photos of family members.",
+  "rolePatient": "Patient",
+  "roleCaregiver": "Caregiver",
+  "roleDoctor": "Doctor",
+  "rolePatientDesc": "Play games and exercises",
+  "roleCaregiverDesc": "Manage care and track progress",
+  "roleDoctorDesc": "Monitor patients and reports",
+  "tagline": "A new life, built from old memories",
+  "switchAnytime": "You can switch roles anytime",
+  "selectLanguage": "Select Language"
 }

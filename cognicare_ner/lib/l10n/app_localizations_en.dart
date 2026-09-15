@@ -90,6 +90,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get descRoutine => 'Put the daily routine in order';
 
   @override
+  String get gameDailyRoutine => 'Daily routine';
+
+  @override
   String get gameWhatIsThis => 'What is this?';
 
   @override
@@ -176,4 +179,31 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get addFamilyPhotos =>
       'Ask your family to add photos of family members.';
+
+  @override
+  String get rolePatient => 'Patient';
+
+  @override
+  String get roleCaregiver => 'Caregiver';
+
+  @override
+  String get roleDoctor => 'Doctor';
+
+  @override
+  String get rolePatientDesc => 'Play games and exercises';
+
+  @override
+  String get roleCaregiverDesc => 'Manage care and track progress';
+
+  @override
+  String get roleDoctorDesc => 'Monitor patients and reports';
+
+  @override
+  String get tagline => 'A new life, built from old memories';
+
+  @override
+  String get switchAnytime => 'You can switch roles anytime';
+
+  @override
+  String get selectLanguage => 'Select Language';
 }

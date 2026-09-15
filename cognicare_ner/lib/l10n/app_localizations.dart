@@ -276,6 +276,12 @@ abstract class AppLocalizations {
   /// **'Put the daily routine in order'**
   String get descRoutine;
 
+  /// No description provided for @gameDailyRoutine.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily routine'**
+  String get gameDailyRoutine;
+
   /// No description provided for @gameWhatIsThis.
   ///
   /// In en, this message translates to:
@@ -443,6 +449,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ask your family to add photos of family members.'**
   String get addFamilyPhotos;
+
+  /// No description provided for @rolePatient.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient'**
+  String get rolePatient;
+
+  /// No description provided for @roleCaregiver.
+  ///
+  /// In en, this message translates to:
+  /// **'Caregiver'**
+  String get roleCaregiver;
+
+  /// No description provided for @roleDoctor.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor'**
+  String get roleDoctor;
+
+  /// No description provided for @rolePatientDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Play games and exercises'**
+  String get rolePatientDesc;
+
+  /// No description provided for @roleCaregiverDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage care and track progress'**
+  String get roleCaregiverDesc;
+
+  /// No description provided for @roleDoctorDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Monitor patients and reports'**
+  String get roleDoctorDesc;
+
+  /// No description provided for @tagline.
+  ///
+  /// In en, this message translates to:
+  /// **'A new life, built from old memories'**
+  String get tagline;
+
+  /// No description provided for @switchAnytime.
+  ///
+  /// In en, this message translates to:
+  /// **'You can switch roles anytime'**
+  String get switchAnytime;
+
+  /// No description provided for @selectLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Language'**
+  String get selectLanguage;
 }
 
 class _AppLocalizationsDelegate

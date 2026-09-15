@@ -27,6 +27,7 @@
   "gameRemember": "আপোনাৰ মনত আছেনে?",
   "descRemember": "জীৱনৰ বিশেষ মুহূৰ্তবোৰ মনত পেলাওক",
   "descRoutine": "দৈনন্দিন কাৰ্যসূচী ক্ৰমত সজাওক",
+  "gameDailyRoutine": "দৈনন্দিন কাৰ্যসূচী",
   "gameWhatIsThis": "এইটো কি?",
   "descObjects": "চিনাকি বস্তুৰ নাম কওক",
   "takeBreak": "অলপ জিৰণি লওক আৰু শান্ত হওক",
@@ -60,5 +61,14 @@
   "noVideos": "কোনো ভিডিঅ’ নাই।",
   "completeNamePrompt": "এওঁ কোন? নামটো সম্পূৰ্ণ কৰক।",
   "listenAgainHint": "লাহে লাহে — আকৌ শুনক, তাৰ পিছত শুদ্ধ উত্তৰ বাছি লওক।",
-  "addFamilyPhotos": "আপোনাৰ পৰিয়ালক সদস্যসকলৰ ফটো যোগ কৰিবলৈ কওক।"
+  "addFamilyPhotos": "আপোনাৰ পৰিয়ালক সদস্যসকলৰ ফটো যোগ কৰিবলৈ কওক।",
+  "rolePatient": "ৰোগী",
+  "roleCaregiver": "যত্নকাৰী",
+  "roleDoctor": "চিকিৎসক",
+  "rolePatientDesc": "খেল আৰু অনুশীলন খেলক",
+  "roleCaregiverDesc": "যত্ন পৰিচালনা কৰক আৰু প্ৰগতি চাওক",
+  "roleDoctorDesc": "ৰোগী আৰু প্ৰতিবেদন নিৰীক্ষণ কৰক",
+  "tagline": "পুৰণি স্মৃতিৰে গঢ়া এক নতুন জীৱন",
+  "switchAnytime": "আপুনি যিকোনো সময়তে ভূমিকা সলাব পাৰে",
+  "selectLanguage": "ভাষা বাছনি কৰক"
 }

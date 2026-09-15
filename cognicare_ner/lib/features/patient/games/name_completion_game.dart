@@ -118,7 +118,7 @@ class _NameCompletionGameState extends State<NameCompletionGame> {
       rounds.add(GameRound(
         prompt: 'Complete the name.',
         promptAudioPath:
-            LocalDb.mediaByType('game_prompt_faces').firstOrNull?.localPath,
+            LocalDb.mediaByType('game_prompt_name_completion').firstOrNull?.localPath,
         stimulus: _NameStimulus(
           photo: target.photo,
           chars: chars,

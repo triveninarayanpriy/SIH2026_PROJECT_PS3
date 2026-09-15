@@ -90,6 +90,9 @@ class AppLocalizationsBn extends AppLocalizations {
   String get descRoutine => 'দৈনন্দিন রুটিন ক্রম অনুযায়ী সাজান';
 
   @override
+  String get gameDailyRoutine => 'দৈনন্দিন রুটিন';
+
+  @override
   String get gameWhatIsThis => 'এটি কী?';
 
   @override
@@ -175,4 +178,31 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get addFamilyPhotos => 'আপনার পরিবারকে সদস্যদের ছবি যোগ করতে বলুন।';
+
+  @override
+  String get rolePatient => 'রোগী';
+
+  @override
+  String get roleCaregiver => 'পরিচর্যাকারী';
+
+  @override
+  String get roleDoctor => 'ডাক্তার';
+
+  @override
+  String get rolePatientDesc => 'খেলা ও অনুশীলন করুন';
+
+  @override
+  String get roleCaregiverDesc => 'যত্ন পরিচালনা করুন ও অগ্রগতি দেখুন';
+
+  @override
+  String get roleDoctorDesc => 'রোগী ও রিপোর্ট পর্যবেক্ষণ করুন';
+
+  @override
+  String get tagline => 'পুরনো স্মৃতি দিয়ে গড়া নতুন জীবন';
+
+  @override
+  String get switchAnytime => 'আপনি যেকোনো সময় ভূমিকা বদলাতে পারেন';
+
+  @override
+  String get selectLanguage => 'ভাষা নির্বাচন করুন';
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/ai/difficulty_engine.dart';
 import '../../../core/services/game_content.dart';
+import '../../../core/services/local_db.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../core/widgets/platform_media.dart';
@@ -51,12 +52,12 @@ class _RoutineGameState extends State<RoutineGame> {
     final AppLocalizations t = AppLocalizations.of(context);
     if (_steps.length < 3) {
       return AddMoreCard(
-        title: t.whatComesNext,
+        title: t.gameDailyRoutine,
         message: 'Ask your family to set up the daily routine (at least 3 steps).',
       );
     }
     return GameShell(
-      title: t.whatComesNext,
+      title: t.gameDailyRoutine,
       game: _game,
       domain: 'executive',
       difficulty: _difficulty,
@@ -87,6 +88,8 @@ class _RoutineGameState extends State<RoutineGame> {
         prompt: done.isEmpty
             ? 'What comes first?'
             : 'After ${done.last.label}, what comes next?',
+        promptAudioPath:
+            LocalDb.mediaByType('game_prompt_routine').firstOrNull?.localPath,
         stimulus: _DoneStrip(done: done),
         answerId: correct.id,
         choices: <GameChoice>[

@@ -271,7 +271,7 @@ class _PatientHomeState extends State<PatientHome> {
                                   if (_enabled('routine'))
                                     NawalListTile(
                                       icon: Icons.checklist_rounded,
-                                      title: t.whatComesNext,
+                                      title: t.gameDailyRoutine,
                                       subtitle: t.descRoutine,
                                       onTap: () => _open(context, RoutineGame(patientId: widget.patientId)),
                                     ),

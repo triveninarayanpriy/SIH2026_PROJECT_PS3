@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../features/shared/language_selector_screen.dart';
 import '../services/local_db.dart';
 import '../services/locale_controller.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text.dart';
 import '../theme/app_theme.dart';
@@ -18,81 +19,161 @@ class RolePickerScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool wide = AppTheme.isWide(context);
+    final AppLocalizations t = AppLocalizations.of(context);
+    // Content is compact so it fits one screen without scrolling; the scroll
+    // view is only a safety net for very short devices.
     return Scaffold(
       backgroundColor: AppColors.skyBg,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: AppTheme.screenPadding, vertical: 12),
-          child: NawalPage(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppTheme.screenPadding, vertical: 8),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight - 16),
+                child: NawalPage(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      Align(alignment: Alignment.centerRight, child: _LanguagePill()),
+                      SizedBox(height: wide ? 20 : 10),
+                      Text(
+                        'NAWAL',
+                        textAlign: TextAlign.center,
+                        style: AppText.title().copyWith(
+                          fontSize: wide ? 76 : 52,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2,
+                          color: AppColors.inkDark,
+                          height: 1.0,
+                        ),
+                      ),
+                      Text(
+                        'नवल',
+                        textAlign: TextAlign.center,
+                        style: AppText.title()
+                            .copyWith(fontSize: wide ? 30 : 24, color: AppColors.ink),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        t.tagline,
+                        textAlign: TextAlign.center,
+                        style: AppText.body().copyWith(
+                          fontStyle: FontStyle.italic,
+                          fontSize: wide ? 18 : 15,
+                          color: AppColors.inkDark,
+                        ),
+                      ),
+                      SizedBox(height: wide ? 36 : 24),
+                      if (wide)
+                        ResponsiveCardGrid(
+                          columns: 3,
+                          spacing: 20,
+                          children: <Widget>[
+                            NawalHeroCard(
+                              icon: Icons.emoji_emotions_rounded,
+                              title: t.rolePatient,
+                              description: t.rolePatientDesc,
+                              onTap: () => LocalDb.setActiveRole('patient'),
+                            ),
+                            NawalHeroCard(
+                              icon: Icons.volunteer_activism_rounded,
+                              title: t.roleCaregiver,
+                              description: t.roleCaregiverDesc,
+                              onTap: () => LocalDb.setActiveRole('caregiver'),
+                            ),
+                            NawalHeroCard(
+                              icon: Icons.medical_services_rounded,
+                              title: t.roleDoctor,
+                              description: t.roleDoctorDesc,
+                              onTap: () => LocalDb.setActiveRole('doctor'),
+                            ),
+                          ],
+                        )
+                      else ...<Widget>[
+                        _RoleRow(
+                          icon: Icons.emoji_emotions_rounded,
+                          title: t.rolePatient,
+                          description: t.rolePatientDesc,
+                          onTap: () => LocalDb.setActiveRole('patient'),
+                        ),
+                        const SizedBox(height: 14),
+                        _RoleRow(
+                          icon: Icons.volunteer_activism_rounded,
+                          title: t.roleCaregiver,
+                          description: t.roleCaregiverDesc,
+                          onTap: () => LocalDb.setActiveRole('caregiver'),
+                        ),
+                        const SizedBox(height: 14),
+                        _RoleRow(
+                          icon: Icons.medical_services_rounded,
+                          title: t.roleDoctor,
+                          description: t.roleDoctorDesc,
+                          onTap: () => LocalDb.setActiveRole('doctor'),
+                        ),
+                      ],
+                      const SizedBox(height: 18),
+                      Text(
+                        t.switchAnytime,
+                        textAlign: TextAlign.center,
+                        style: AppText.body(color: AppColors.inkDark).copyWith(fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact role row for phones (icon box + title + description + chevron).
+class _RoleRow extends StatelessWidget {
+  const _RoleRow({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return NawalCard(
+      onTap: onTap,
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: <Widget>[
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.skyBg.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, size: 34, color: AppColors.ink),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: _LanguagePill(),
-                ),
-                SizedBox(height: wide ? 24 : 8),
-                Text(
-                  'NAWAL',
-                  textAlign: TextAlign.center,
-                  style: AppText.title().copyWith(
-                    fontSize: wide ? 84 : 60,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2,
-                    color: AppColors.inkDark,
-                  ),
-                ),
-                Text(
-                  'नवल',
-                  textAlign: TextAlign.center,
-                  style: AppText.title().copyWith(fontSize: wide ? 34 : 28, color: AppColors.ink),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'A new life, built from old memories',
-                  textAlign: TextAlign.center,
-                  style: AppText.body().copyWith(
-                    fontStyle: FontStyle.italic,
-                    fontSize: wide ? 20 : 17,
-                    color: AppColors.inkDark,
-                  ),
-                ),
-                SizedBox(height: wide ? 48 : 32),
-                ResponsiveCardGrid(
-                  columns: 3,
-                  spacing: 20,
-                  children: <Widget>[
-                    NawalHeroCard(
-                      icon: Icons.emoji_emotions_rounded,
-                      title: 'Patient',
-                      description: 'Play games and exercises',
-                      onTap: () => LocalDb.setActiveRole('patient'),
-                    ),
-                    NawalHeroCard(
-                      icon: Icons.volunteer_activism_rounded,
-                      title: 'Caregiver',
-                      description: 'Manage care and track progress',
-                      onTap: () => LocalDb.setActiveRole('caregiver'),
-                    ),
-                    NawalHeroCard(
-                      icon: Icons.medical_services_rounded,
-                      title: 'Doctor',
-                      description: 'Monitor patients and reports',
-                      onTap: () => LocalDb.setActiveRole('doctor'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 28),
-                Text(
-                  'You can switch roles anytime',
-                  textAlign: TextAlign.center,
-                  style: AppText.body(color: AppColors.inkDark),
-                ),
-                const SizedBox(height: 40),
+                Text(title, style: AppText.title().copyWith(fontSize: 22, color: AppColors.text)),
+                Text(description,
+                    style: AppText.body(color: AppColors.textMuted).copyWith(fontSize: 14)),
               ],
             ),
           ),
-        ),
+          const Icon(Icons.chevron_right_rounded, color: AppColors.ink, size: 30),
+        ],
       ),
     );
   }

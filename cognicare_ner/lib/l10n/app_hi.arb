@@ -27,6 +27,7 @@
   "gameRemember": "क्या आपको याद है?",
   "descRemember": "जीवन के खास पलों को याद करें",
   "descRoutine": "दैनिक दिनचर्या को क्रम में लगाएँ",
+  "gameDailyRoutine": "दैनिक दिनचर्या",
   "gameWhatIsThis": "यह क्या है?",
   "descObjects": "परिचित वस्तुओं के नाम बताएँ",
   "takeBreak": "थोड़ा विश्राम करें और शांत हों",
@@ -60,5 +61,14 @@
   "noVideos": "कोई वीडियो उपलब्ध नहीं है।",
   "completeNamePrompt": "यह कौन है? नाम पूरा करें।",
   "listenAgainHint": "आराम से — फिर से सुनें, फिर सही उत्तर चुनें।",
-  "addFamilyPhotos": "अपने परिवार से सदस्यों की तस्वीरें जोड़ने को कहें।"
+  "addFamilyPhotos": "अपने परिवार से सदस्यों की तस्वीरें जोड़ने को कहें।",
+  "rolePatient": "रोगी",
+  "roleCaregiver": "देखभालकर्ता",
+  "roleDoctor": "डॉक्टर",
+  "rolePatientDesc": "खेल और अभ्यास खेलें",
+  "roleCaregiverDesc": "देखभाल प्रबंधित करें और प्रगति देखें",
+  "roleDoctorDesc": "मरीज़ों और रिपोर्ट पर नज़र रखें",
+  "tagline": "पुरानी यादों से बना एक नया जीवन",
+  "switchAnytime": "आप कभी भी भूमिका बदल सकते हैं",
+  "selectLanguage": "भाषा चुनें"
 }

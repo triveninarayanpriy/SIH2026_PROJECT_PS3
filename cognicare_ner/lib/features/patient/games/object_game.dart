@@ -83,6 +83,8 @@ class _ObjectGameState extends State<ObjectGame> {
 
       rounds.add(GameRound(
         prompt: 'What is this?',
+        promptAudioPath:
+            LocalDb.mediaByType('game_prompt_objects').firstOrNull?.localPath,
         stimulus: Container(
           width: 260,
           height: 260,
