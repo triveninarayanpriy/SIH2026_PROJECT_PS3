@@ -6,6 +6,7 @@ import '../../core/services/nawal_remote.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text.dart';
 import '../../core/theme/app_theme.dart';
+import '../dev/ble_test_screen.dart';
 
 /// Professional pairing + test screen for the NAWAL BLE remote.
 ///
@@ -89,6 +90,14 @@ class _RemoteConnectScreenState extends State<RemoteConnectScreen> {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 10),
+                TextButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const BleTestScreen()),
+                  ),
+                  icon: const Icon(Icons.biotech_rounded, size: 20),
+                  label: const Text('Open BLE diagnostic test'),
                 ),
               ],
               const SizedBox(height: 24),
