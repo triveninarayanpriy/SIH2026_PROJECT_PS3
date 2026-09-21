@@ -95,11 +95,13 @@ class _BleTestScreenState extends State<BleTestScreen> {
       _log0('Starting scan (no service filter, 12s)…');
       _scanSub?.cancel();
       _scanSub = FlutterBluePlus.scanResults.listen((List<ScanResult> results) {
+        bool changed = false;
         for (final ScanResult r in results) {
           final String id = r.device.remoteId.str;
           final bool isNew = !_results.containsKey(id);
           _results[id] = r;
           if (isNew) {
+            changed = true;
             final String name = r.device.platformName.isNotEmpty
                 ? r.device.platformName
                 : (r.advertisementData.advName.isNotEmpty
@@ -108,7 +110,8 @@ class _BleTestScreenState extends State<BleTestScreen> {
             _log0('Found: $name  [$id]  rssi=${r.rssi}');
           }
         }
-        if (mounted) setState(() {});
+        // Only rebuild the list when a NEW device appears (avoids per-batch jank).
+        if (changed && mounted) setState(() {});
       }, onError: (e) => _log0('scanResults error: $e'));
 
       // No withServices filter → see everything.

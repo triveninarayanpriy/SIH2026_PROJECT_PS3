@@ -20,13 +20,16 @@ class RemoteStatusChip extends StatelessWidget {
       valueListenable: NawalRemote.instance.statusNotifier,
       builder: (context, RemoteStatus status, _) {
         final bool on = status == RemoteStatus.connected;
-        final bool scanning = status == RemoteStatus.scanning;
+        final bool busy = status == RemoteStatus.scanning ||
+            status == RemoteStatus.connecting;
         final Color color = on
             ? AppColors.success
-            : (scanning ? AppColors.gentleWarning : AppColors.textMuted);
+            : (busy ? AppColors.gentleWarning : AppColors.textMuted);
         final String label = on
             ? 'Remote connected'
-            : (scanning ? 'Searching…' : 'Remote off');
+            : (status == RemoteStatus.connecting
+                ? 'Connecting…'
+                : (status == RemoteStatus.scanning ? 'Searching…' : 'Remote off'));
         final Icon icon = Icon(Icons.gamepad_rounded, color: color, size: 20);
         if (compact) {
           return Padding(
